@@ -37,6 +37,8 @@ import '../../data/drift/daos/growth_message_repository.dart';
 import '../../data/drift/daos/expense_repository.dart';
 import '../../data/drift/daos/item_repository.dart';
 import '../../data/drift/daos/size_repository.dart';
+import '../../data/drift/daos/time_capsule_repository.dart';
+import '../../data/drift/daos/word_repository.dart';
 
 class BackupService {
   final AppDatabase _db;
@@ -74,6 +76,8 @@ class BackupService {
   late final ExpenseRepository _expenseRepo;
   late final ItemRepository _itemRepo;
   late final SizeRepository _sizeRepo;
+  late final TimeCapsuleRepository _timeCapsuleRepo;
+  late final WordRepository _wordRepo;
 
   BackupService(this._db) {
     _babyRepo = BabyRepository(_db);
@@ -110,6 +114,8 @@ class BackupService {
     _expenseRepo = ExpenseRepository(_db);
     _itemRepo = ItemRepository(_db);
     _sizeRepo = SizeRepository(_db);
+    _timeCapsuleRepo = TimeCapsuleRepository(_db);
+    _wordRepo = WordRepository(_db);
   }
 
   Future<String> exportToJson(String babyId) async {
@@ -149,6 +155,8 @@ class BackupService {
       'expenseRecords': await _exportExpense(babyId),
       'itemRecords': await _exportItem(babyId),
       'sizeRecords': await _exportSize(babyId),
+      'timeCapsuleRecords': await _exportTimeCapsule(babyId),
+      'wordRecords': await _exportWord(babyId),
     };
 
     return const JsonEncoder.withIndent('  ').convert(data);
@@ -577,6 +585,38 @@ class BackupService {
       'type': r.type,
       'value': r.value,
       'note': r.note,
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _exportTimeCapsule(String babyId) async {
+    final records = await _timeCapsuleRepo.getAll(babyId);
+    return records.map((r) => {
+      'id': r.id,
+      'title': r.title,
+      'letter': r.letter,
+      'photoPath': r.photoPath,
+      'audioPath': r.audioPath,
+      'videoPath': r.videoPath,
+      'mood': r.mood,
+      'sealedAt': r.sealedAt.toIso8601String(),
+      'unlockAt': r.unlockAt.toIso8601String(),
+      'isUnlocked': r.isUnlocked,
+      'unlockedAt': r.unlockedAt?.toIso8601String(),
+    }).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _exportWord(String babyId) async {
+    final records = await _wordRepo.getAll(babyId);
+    return records.map((r) => {
+      'id': r.id,
+      'word': r.word,
+      'pinyin': r.pinyin,
+      'context': r.context,
+      'speaker': r.speaker,
+      'category': r.category,
+      'audioPath': r.audioPath,
+      'firstSaidAt': r.firstSaidAt.toIso8601String(),
+      'isFavorite': r.isFavorite,
     }).toList();
   }
 

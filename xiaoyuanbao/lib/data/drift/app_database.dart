@@ -38,6 +38,8 @@ import 'tables/growth_message_records.dart';
 import 'tables/expense_records.dart';
 import 'tables/item_records.dart';
 import 'tables/size_records.dart';
+import 'tables/time_capsule_records.dart';
+import 'tables/word_records.dart';
 
 part 'app_database.g.dart';
 
@@ -77,6 +79,8 @@ part 'app_database.g.dart';
     ExpenseRecords,
     ItemRecords,
     SizeRecords,
+    TimeCapsuleRecords,
+    WordRecords,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -86,7 +90,7 @@ class AppDatabase extends _$AppDatabase {
   final QueryExecutor _db;
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -95,6 +99,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createAll();
       },
       onUpgrade: (Migrator m, int from, int to) async {
+        if (from < 2) {
+          await m.createTable(timeCapsuleRecords);
+          await m.createTable(wordRecords);
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');

@@ -29,6 +29,8 @@ enum RecordCategory {
   photo,
   video,
   audio,
+  capsule,
+  word,
 }
 
 extension RecordCategoryX on RecordCategory {
@@ -64,6 +66,8 @@ extension RecordCategoryX on RecordCategory {
       RecordCategory.photo => '照片',
       RecordCategory.video => '视频',
       RecordCategory.audio => '声音',
+      RecordCategory.capsule => '胶囊',
+      RecordCategory.word => '词汇',
     };
   }
 
@@ -99,6 +103,8 @@ extension RecordCategoryX on RecordCategory {
       RecordCategory.photo => '📷',
       RecordCategory.video => '🎬',
       RecordCategory.audio => '🎵',
+      RecordCategory.capsule => '⏳',
+      RecordCategory.word => '🔤',
     };
   }
 }

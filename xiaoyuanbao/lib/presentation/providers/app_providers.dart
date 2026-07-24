@@ -36,7 +36,12 @@ import '../../data/drift/daos/growth_message_repository.dart';
 import '../../data/drift/daos/expense_repository.dart';
 import '../../data/drift/daos/item_repository.dart';
 import '../../data/drift/daos/size_repository.dart';
+import '../../data/drift/daos/time_capsule_repository.dart';
+import '../../data/drift/daos/word_repository.dart';
 import '../../services/ai/ai_service.dart';
+import '../../services/ai/story_generator_service.dart';
+import '../../services/health/red_flag_service.dart';
+import '../../services/memory/on_this_day_service.dart';
 import '../../services/media/photo_service.dart';
 import '../../services/media/audio_service.dart';
 import '../../services/vaccine/vaccine_service.dart';
@@ -47,6 +52,7 @@ import '../../services/summary/summary_service.dart';
 import '../../services/popup/smart_popup_service.dart';
 import '../../services/suggestion/suggestion_service.dart';
 import '../../services/backup/backup_service.dart';
+import '../../services/memory/on_this_day_service.dart';
 import '../../services/notification/notification_service.dart';
 import '../../core/constants/app_enums.dart';
 
@@ -224,6 +230,16 @@ final sizeRepositoryProvider = Provider<SizeRepository>((ref) {
   return SizeRepository(db);
 });
 
+final timeCapsuleRepositoryProvider = Provider<TimeCapsuleRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return TimeCapsuleRepository(db);
+});
+
+final wordRepositoryProvider = Provider<WordRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return WordRepository(db);
+});
+
 final photoServiceProvider = Provider<PhotoService>((ref) {
   final repo = ref.watch(photoRepositoryProvider);
   return PhotoService(repo);
@@ -333,4 +349,30 @@ final backupServiceProvider = Provider<BackupService>((ref) {
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
+});
+
+final onThisDayServiceProvider = Provider<OnThisDayService>((ref) {
+  return OnThisDayService(
+    ref.watch(photoRepositoryProvider),
+    ref.watch(diaryRepositoryProvider),
+    ref.watch(milestoneRepositoryProvider),
+    ref.watch(quoteRepositoryProvider),
+    ref.watch(babyRepositoryProvider),
+  );
+});
+
+final redFlagServiceProvider = Provider<RedFlagService>((ref) {
+  return RedFlagService(
+    ref.watch(milestoneRepositoryProvider),
+    ref.watch(babyRepositoryProvider),
+  );
+});
+
+final storyGeneratorServiceProvider = Provider<StoryGeneratorService>((ref) {
+  return StoryGeneratorService(
+    ref.watch(babyRepositoryProvider),
+    ref.watch(milestoneRepositoryProvider),
+    ref.watch(quoteRepositoryProvider),
+    ref.watch(diaryRepositoryProvider),
+  );
 });

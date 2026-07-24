@@ -7,6 +7,10 @@ import '../../../core/constants/app_enums.dart';
 import '../../../data/drift/app_database.dart';
 import '../providers/app_providers.dart';
 import '../ai_assistant/ai_assistant_page.dart';
+import '../time_capsule/time_capsule_page.dart';
+import '../word_tracker/word_tracker_page.dart';
+import '../on_this_day/on_this_day_page.dart';
+import '../story/story_generator_page.dart';
 import '../widgets/smart_popup_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -167,9 +171,99 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
             _buildAgeAdaptiveQuickActions(theme, stage),
             SizedBox(height: theme.spacingXl),
             _buildSmartRecommendation(theme),
+            SizedBox(height: theme.spacingXl),
+            _buildFeatureEntries(theme, stage),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildFeatureEntries(AppTheme theme, GrowthStage stage) {
+    final entries = <_FeatureEntry>[
+      _FeatureEntry(
+        icon: Icons.mailbox_outlined,
+        label: '时间胶囊',
+        color: const Color(0xFFE91E63),
+        page: const TimeCapsulePage(),
+      ),
+      _FeatureEntry(
+        icon: Icons.history_edu_outlined,
+        label: '往日重现',
+        color: const Color(0xFF9C27B0),
+        page: const OnThisDayPage(),
+      ),
+      _FeatureEntry(
+        icon: Icons.auto_stories_outlined,
+        label: 'AI故事',
+        color: const Color(0xFF673AB7),
+        page: const StoryGeneratorPage(),
+      ),
+      if (stage == GrowthStage.infant ||
+          stage == GrowthStage.toddler ||
+          stage == GrowthStage.preschool)
+        _FeatureEntry(
+          icon: Icons.abc,
+          label: '词汇收集',
+          color: const Color(0xFF3F51B5),
+          page: const WordTrackerPage(),
+        ),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '更多功能',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        SizedBox(height: theme.spacingMd),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 4,
+          mainAxisSpacing: theme.spacingMd,
+          crossAxisSpacing: theme.spacingMd,
+          childAspectRatio: 0.9,
+          children: entries.map((entry) {
+            return GestureDetector(
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => entry.page),
+                );
+              },
+              child: Column(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: entry.color.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(theme.radiusMd),
+                    ),
+                    child: Icon(
+                      entry.icon,
+                      color: entry.color,
+                      size: 26,
+                    ),
+                  ),
+                  SizedBox(height: theme.spacingXs),
+                  Text(
+                    entry.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.textSecondary,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      ],
     );
   }
 
@@ -1028,11 +1122,25 @@ class _RecordItem extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _FeatureEntry {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final Widget page;
+
+  const _FeatureEntry({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.page,
+  });
 }
 
 class _QuickActionButton extends StatelessWidget {
