@@ -45,6 +45,7 @@ import '../../services/milestone/milestone_service.dart';
 import '../../services/timeline/timeline_service.dart';
 import '../../services/summary/summary_service.dart';
 import '../../services/popup/smart_popup_service.dart';
+import '../../services/suggestion/suggestion_service.dart';
 import '../../services/backup/backup_service.dart';
 import '../../services/notification/notification_service.dart';
 import '../../core/constants/app_enums.dart';
@@ -284,6 +285,36 @@ final smartPopupServiceProvider = Provider<SmartPopupService>((ref) {
     medicationRepository: medRepo,
     milestoneRepository: milestoneRepo,
     babyRepository: babyRepo,
+  );
+});
+
+final patternAnalyzerProvider = Provider<PatternAnalyzer>((ref) {
+  return PatternAnalyzer(
+    sleepRepository: ref.watch(sleepRepositoryProvider),
+    feedingRepository: ref.watch(feedingRepositoryProvider),
+    growthRepository: ref.watch(growthRepositoryProvider),
+    babyRepository: ref.watch(babyRepositoryProvider),
+  );
+});
+
+final anomalyDetectorProvider = Provider<AnomalyDetector>((ref) {
+  return AnomalyDetector(
+    sleepRepository: ref.watch(sleepRepositoryProvider),
+    feedingRepository: ref.watch(feedingRepositoryProvider),
+    growthRepository: ref.watch(growthRepositoryProvider),
+    temperatureRepository: ref.watch(temperatureRepositoryProvider),
+    emotionRepository: ref.watch(emotionRepositoryProvider),
+    babyRepository: ref.watch(babyRepositoryProvider),
+  );
+});
+
+final suggestionServiceProvider = Provider<SuggestionService>((ref) {
+  return SuggestionService(
+    patternAnalyzer: ref.watch(patternAnalyzerProvider),
+    anomalyDetector: ref.watch(anomalyDetectorProvider),
+    milestoneRepository: ref.watch(milestoneRepositoryProvider),
+    diaryRepository: ref.watch(diaryRepositoryProvider),
+    babyRepository: ref.watch(babyRepositoryProvider),
   );
 });
 

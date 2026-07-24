@@ -47,6 +47,14 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
     _FilterChipData(label: '疫苗', category: RecordCategory.vaccine),
     _FilterChipData(label: '里程碑', category: RecordCategory.milestone),
     _FilterChipData(label: '日记', category: RecordCategory.diary),
+    _FilterChipData(label: '语录', category: RecordCategory.quote),
+    _FilterChipData(label: '互动', category: RecordCategory.activity),
+    _FilterChipData(label: '费用', category: RecordCategory.expense),
+    _FilterChipData(label: '牙齿', category: RecordCategory.teeth),
+    _FilterChipData(label: '身高体重', category: RecordCategory.growth),
+    _FilterChipData(label: '考试', category: RecordCategory.exam),
+    _FilterChipData(label: '获奖', category: RecordCategory.award),
+    _FilterChipData(label: '情绪', category: RecordCategory.emotion),
   ];
 
   @override

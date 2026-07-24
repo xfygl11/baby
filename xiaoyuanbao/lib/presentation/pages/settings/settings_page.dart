@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/constants/app_enums.dart';
 import '../providers/app_providers.dart';
 
 enum ThemeModeOption { system, light, dark }
@@ -19,6 +20,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   ThemeModeOption _themeMode = ThemeModeOption.system;
   ThemeColorOption _themeColor = ThemeColorOption.age;
   FontSizeOption _fontSize = FontSizeOption.standard;
+  GrowthStage _growthStage = GrowthStage.infant;
 
   bool _vaccineReminder = true;
   bool _feedingReminder = true;
@@ -71,6 +73,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               _buildThemeColorTile(theme),
               _buildDivider(theme),
               _buildFontSizeTile(theme),
+              _buildDivider(theme),
+              _buildGrowthStageTile(theme),
             ],
           ),
         ),
@@ -105,6 +109,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       title: '字体大小',
       subtitle: _fontSizeLabel,
       onTap: () => _showFontSizeDialog(),
+    );
+  }
+
+  Widget _buildGrowthStageTile(AppTheme theme) {
+    return _buildNavigationTile(
+      theme,
+      icon: Icons.baby_changing_station_outlined,
+      title: '成长阶段',
+      subtitle: _growthStageLabel,
+      onTap: () => _showGrowthStageDialog(),
     );
   }
 
@@ -605,6 +619,16 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     };
   }
 
+  String get _growthStageLabel {
+    return switch (_growthStage) {
+      GrowthStage.infant => '婴儿期（0-1岁）',
+      GrowthStage.toddler => '幼儿期（1-3岁）',
+      GrowthStage.preschool => '学龄前期（3-6岁）',
+      GrowthStage.school => '学龄期（6-12岁）',
+      GrowthStage.teen => '青春期（12-18岁）',
+    };
+  }
+
   void _showThemeModeDialog() {
     showDialog(
       context: context,
@@ -770,6 +794,42 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         );
       },
     );
+  }
+
+  void _showGrowthStageDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('成长阶段'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: GrowthStage.values.map((stage) {
+              final isSelected = _growthStage == stage;
+              return ListTile(
+                title: Text(_growthStageLabelForStage(stage)),
+                trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+                onTap: () {
+                  setState(() => _growthStage = stage);
+                  ref.read(themeStageProvider.notifier).state = stage;
+                  Navigator.of(context).pop();
+                },
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  String _growthStageLabelForStage(GrowthStage stage) {
+    return switch (stage) {
+      GrowthStage.infant => '婴儿期（0-1岁）',
+      GrowthStage.toddler => '幼儿期（1-3岁）',
+      GrowthStage.preschool => '学龄前期（3-6岁）',
+      GrowthStage.school => '学龄期（6-12岁）',
+      GrowthStage.teen => '青春期（12-18岁）',
+    };
   }
 
   String _aiAutonomyLabelForOption(AiAutonomyLevel option) {

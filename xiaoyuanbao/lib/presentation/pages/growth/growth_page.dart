@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../data/drift/daos/growth_repository.dart';
+import '../../../data/drift/daos/teeth_repository.dart';
 import '../../../services/growth/growth_service.dart';
 import '../../../services/milestone/milestone_service.dart';
 import '../../../services/vaccine/vaccine_service.dart';
@@ -25,7 +26,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -81,6 +82,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
                 Tab(text: '📈 生长曲线'),
                 Tab(text: '💉 疫苗'),
                 Tab(text: '🏆 里程碑'),
+                Tab(text: '🦷 牙齿'),
               ],
             ),
           ),
@@ -90,6 +92,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
               GrowthCurveTab(baby: baby),
               VaccineTab(baby: baby),
               MilestoneTab(baby: baby),
+              TeethTab(baby: baby),
             ],
           ),
         );
@@ -1907,6 +1910,355 @@ class _MilestoneTabState extends ConsumerState<MilestoneTab> {
                 ),
               ],
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ==================== 牙齿 Tab ====================
+
+class TeethTab extends ConsumerStatefulWidget {
+  final Baby baby;
+
+  const TeethTab({super.key, required this.baby});
+
+  @override
+  ConsumerState<TeethTab> createState() => _TeethTabState();
+}
+
+class _TeethTabState extends ConsumerState<TeethTab> {
+  late Future<List<TeethRecord>> _teethFuture;
+  final List<String> _toothNames = [
+    '下中切牙', '下侧切牙', '下尖牙', '下第一乳磨牙', '下第二乳磨牙',
+    '上中切牙', '上侧切牙', '上尖牙', '上第一乳磨牙', '上第二乳磨牙',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _teethFuture = _loadTeeth();
+  }
+
+  Future<List<TeethRecord>> _loadTeeth() {
+    final repo = ref.read(teethRepositoryProvider);
+    return repo.getAllTeeth(widget.baby.id);
+  }
+
+  void _refresh() {
+    setState(() {
+      _teethFuture = _loadTeeth();
+    });
+  }
+
+  void _showAddToothDialog() {
+    int? selectedTooth;
+    final theme = AppTheme.of(context);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('记录出牙'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('选择牙齿:', style: TextStyle(fontSize: 14, color: theme.textSecondary)),
+            SizedBox(height: theme.spacingSm),
+            Wrap(
+              spacing: theme.spacingSm,
+              runSpacing: theme.spacingSm,
+              children: List.generate(20, (index) {
+                final isSelected = selectedTooth == index;
+                final name = _toothNames[index ~/ 2];
+                final side = index % 2 == 0 ? '左' : '右';
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => selectedTooth = index);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: theme.spacingMd, vertical: theme.spacingSm),
+                    decoration: BoxDecoration(
+                      color: isSelected ? theme.stageAccent : theme.stageSurface,
+                      borderRadius: BorderRadius.circular(theme.radiusMd),
+                      border: Border.all(color: isSelected ? theme.stageAccent : theme.textTertiary.withOpacity(0.3)),
+                    ),
+                    child: Text(
+                      '$side$name',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isSelected ? theme.onAccent : theme.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (selectedTooth == null) return;
+              final repo = ref.read(teethRepositoryProvider);
+              await repo.addTeeth(
+                babyId: widget.baby.id,
+                toothNumber: selectedTooth!,
+                eruptionDate: DateTime.now(),
+              );
+              Navigator.of(ctx).pop();
+              _refresh();
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+
+    return FutureBuilder<List<TeethRecord>>(
+      future: _teethFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingWidget(message: '加载牙齿数据...');
+        }
+        if (snapshot.hasError) {
+          return EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: '加载失败',
+            subtitle: '${snapshot.error}',
+          );
+        }
+        final teeth = snapshot.data ?? [];
+        final eruptedCount = teeth.where((t) => t.eruptionDate != null).length;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(theme.spacingMd),
+          child: Column(
+            children: [
+              _buildProgressCard(eruptedCount, theme),
+              SizedBox(height: theme.spacingLg),
+              _buildTeethChart(teeth, theme),
+              SizedBox(height: theme.spacingLg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _showAddToothDialog,
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text('记录新出牙'),
+                ),
+              ),
+              SizedBox(height: theme.spacingXl),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildProgressCard(int eruptedCount, AppTheme theme) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacingLg),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.stageAccent, theme.stageAccentDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(theme.radiusLg),
+        boxShadow: [
+          BoxShadow(
+            color: theme.stageAccent.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Text('🦷', style: TextStyle(fontSize: 28)),
+              SizedBox(width: theme.spacingMd),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '出牙进度',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.onAccent,
+                      ),
+                    ),
+                    SizedBox(height: theme.spacingXs),
+                    Text(
+                      '已长出 $eruptedCount / 共 20 颗乳牙',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.onAccent.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: theme.spacingMd),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(theme.radiusPill),
+            child: LinearProgressIndicator(
+              value: eruptedCount / 20,
+              minHeight: 8,
+              backgroundColor: theme.onAccent.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(theme.onAccent),
+            ),
+          ),
+          SizedBox(height: theme.spacingXs),
+          Text(
+            '${(eruptedCount / 20 * 100).toStringAsFixed(0)}% 完成',
+            style: TextStyle(
+              fontSize: 12,
+              color: theme.onAccent.withOpacity(0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeethChart(List<TeethRecord> teeth, AppTheme theme) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacingLg),
+      decoration: BoxDecoration(
+        color: theme.paper,
+        borderRadius: BorderRadius.circular(theme.radiusLg),
+        border: Border.all(color: theme.stageSurface, width: 1),
+      ),
+      child: Column(
+        children: [
+          Text(
+            '乳牙示意图',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: theme.textPrimary,
+            ),
+          ),
+          SizedBox(height: theme.spacingLg),
+          _buildUpperJaw(teeth, theme),
+          SizedBox(height: theme.spacingLg),
+          _buildLowerJaw(teeth, theme),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpperJaw(List<TeethRecord> teeth, AppTheme theme) {
+    return Column(
+      children: [
+        Text('上颌', style: TextStyle(fontSize: 12, color: theme.textTertiary)),
+        SizedBox(height: theme.spacingSm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildTooth(teeth, 9, theme),
+            _buildTooth(teeth, 8, theme),
+            _buildTooth(teeth, 7, theme),
+            _buildTooth(teeth, 6, theme),
+            _buildTooth(teeth, 5, theme),
+            _buildTooth(teeth, 4, theme),
+            _buildTooth(teeth, 3, theme),
+            _buildTooth(teeth, 2, theme),
+            _buildTooth(teeth, 1, theme),
+            _buildTooth(teeth, 0, theme),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLowerJaw(List<TeethRecord> teeth, AppTheme theme) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildTooth(teeth, 10, theme),
+            _buildTooth(teeth, 11, theme),
+            _buildTooth(teeth, 12, theme),
+            _buildTooth(teeth, 13, theme),
+            _buildTooth(teeth, 14, theme),
+            _buildTooth(teeth, 15, theme),
+            _buildTooth(teeth, 16, theme),
+            _buildTooth(teeth, 17, theme),
+            _buildTooth(teeth, 18, theme),
+            _buildTooth(teeth, 19, theme),
+          ],
+        ),
+        SizedBox(height: theme.spacingSm),
+        Text('下颌', style: TextStyle(fontSize: 12, color: theme.textTertiary)),
+      ],
+    );
+  }
+
+  Widget _buildTooth(List<TeethRecord> teeth, int toothNumber, AppTheme theme) {
+    final tooth = teeth.firstWhere((t) => t.toothNumber == toothNumber, orElse: () => TeethRecord(
+      id: '',
+      babyId: '',
+      toothNumber: toothNumber,
+      eruptionDate: null,
+      note: null,
+    ));
+    final erupted = tooth.eruptionDate != null;
+
+    return Container(
+      width: 32,
+      height: 36,
+      margin: EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        color: erupted ? theme.success.withOpacity(0.2) : theme.stageSurface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(4),
+          topRight: Radius.circular(4),
+          bottomLeft: Radius.circular(2),
+          bottomRight: Radius.circular(2),
+        ),
+        border: Border.all(
+          color: erupted ? theme.success : theme.textTertiary.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            erupted ? '◆' : '◇',
+            style: TextStyle(
+              fontSize: 14,
+              color: erupted ? theme.success : theme.textTertiary.withOpacity(0.3),
+            ),
+          ),
+          SizedBox(height: 2),
+          Text(
+            '${toothNumber + 1}',
+            style: TextStyle(
+              fontSize: 9,
+              color: erupted ? theme.textSecondary : theme.textTertiary.withOpacity(0.5),
+            ),
           ),
         ],
       ),
