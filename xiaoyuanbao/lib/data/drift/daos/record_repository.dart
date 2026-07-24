@@ -480,6 +480,60 @@ class RecordRepository {
       }
     }
 
+    if (shouldInclude(RecordCategory.quote)) {
+      final quoteRecords = await (_db.select(_db.quoteRecords)
+            ..where((t) => t.babyId.equals(babyId))
+            ..where((t) => t.isDeleted.equals(false))
+            ..orderBy([(t) => OrderingTerm.desc(t.recordTime)]))
+          .get();
+      for (final r in quoteRecords) {
+        allRecords.add({
+          'id': r.id,
+          'category': RecordCategory.quote.name,
+          'time': r.recordTime,
+          'title': _getQuoteTitle(r),
+          'subtitle': _getQuoteSubtitle(r),
+          'icon': RecordCategory.quote.icon,
+        });
+      }
+    }
+
+    if (shouldInclude(RecordCategory.activity)) {
+      final activityRecords = await (_db.select(_db.activityRecords)
+            ..where((t) => t.babyId.equals(babyId))
+            ..where((t) => t.isDeleted.equals(false))
+            ..orderBy([(t) => OrderingTerm.desc(t.startTime)]))
+          .get();
+      for (final r in activityRecords) {
+        allRecords.add({
+          'id': r.id,
+          'category': RecordCategory.activity.name,
+          'time': r.startTime,
+          'title': _getActivityTitle(r),
+          'subtitle': _getActivitySubtitle(r),
+          'icon': RecordCategory.activity.icon,
+        });
+      }
+    }
+
+    if (shouldInclude(RecordCategory.expense)) {
+      final expenseRecords = await (_db.select(_db.expenseRecords)
+            ..where((t) => t.babyId.equals(babyId))
+            ..where((t) => t.isDeleted.equals(false))
+            ..orderBy([(t) => OrderingTerm.desc(t.expenseDate)]))
+          .get();
+      for (final r in expenseRecords) {
+        allRecords.add({
+          'id': r.id,
+          'category': RecordCategory.expense.name,
+          'time': r.expenseDate,
+          'title': _getExpenseTitle(r),
+          'subtitle': _getExpenseSubtitle(r),
+          'icon': RecordCategory.expense.icon,
+        });
+      }
+    }
+
     allRecords.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
 
     if (offset != null && offset > 0) {
@@ -1101,6 +1155,92 @@ class RecordRepository {
     }
     if (r.isFavorite) {
       parts.add('已收藏');
+    }
+    return parts.join(' · ');
+  }
+
+  String _getQuoteTitle(QuoteRecord r) {
+    if (r.content.length > 20) {
+      return r.content.substring(0, 20) + '...';
+    }
+    return r.content;
+  }
+
+  String _getQuoteSubtitle(QuoteRecord r) {
+    final parts = <String>[];
+    final speakerLabels = {
+      'baby': '宝宝',
+      'dad': '爸爸',
+      'mom': '妈妈',
+      'grandma': '奶奶',
+      'grandpa': '爷爷',
+    };
+    parts.add(speakerLabels[r.speaker] ?? r.speaker);
+    if (r.emotion != null && r.emotion!.isNotEmpty) {
+      parts.add(r.emotion!);
+    }
+    if (r.isFavorite) {
+      parts.add('已收藏');
+    }
+    return parts.join(' · ');
+  }
+
+  String _getActivityTitle(ActivityRecord r) {
+    final activityLabels = {
+      'reading': '读绘本',
+      'music': '听音乐',
+      'massage': '做抚触',
+      'swimming': '游泳',
+      'outdoor': '户外活动',
+      'game': '游戏',
+      'tummyTime': '趴趴时间',
+      'dancing': '跳舞',
+      'cooking': '做饭',
+      'craft': '手工',
+      'painting': '画画',
+      'puzzle': '拼图',
+      'storytelling': '讲故事',
+      'sports': '运动',
+      'other': '互动',
+    };
+    return activityLabels[r.activityType] ?? r.activityType;
+  }
+
+  String _getActivitySubtitle(ActivityRecord r) {
+    final parts = <String>[];
+    if (r.endTime != null) {
+      final duration = r.endTime!.difference(r.startTime).inMinutes;
+      parts.add('${duration}分钟');
+    } else {
+      parts.add('进行中');
+    }
+    if (r.description != null && r.description!.isNotEmpty) {
+      parts.add(r.description!);
+    }
+    return parts.join(' · ');
+  }
+
+  String _getExpenseTitle(ExpenseRecord r) {
+    final categoryLabels = {
+      'formula': '奶粉',
+      'diaper': '尿布',
+      'medical': '医疗',
+      'education': '教育',
+      'toy': '玩具',
+      'clothing': '服装',
+      'food': '食品',
+      'transportation': '交通',
+      'entertainment': '娱乐',
+      'other': '其他',
+    };
+    return categoryLabels[r.category] ?? r.category;
+  }
+
+  String _getExpenseSubtitle(ExpenseRecord r) {
+    final parts = <String>[];
+    parts.add('¥${r.amount.toStringAsFixed(2)}');
+    if (r.description != null && r.description!.isNotEmpty) {
+      parts.add(r.description!);
     }
     return parts.join(' · ');
   }

@@ -8,6 +8,11 @@ import '../../data/drift/daos/milestone_repository.dart';
 import '../../data/drift/daos/vaccine_repository.dart';
 import '../../data/drift/daos/diary_repository.dart';
 import '../../data/drift/daos/growth_repository.dart';
+import '../../data/drift/daos/quote_repository.dart';
+import '../../data/drift/daos/activity_repository.dart';
+import '../../data/drift/daos/expense_repository.dart';
+import '../../data/drift/daos/photo_repository.dart';
+import '../../data/drift/daos/audio_repository.dart';
 import '../../data/drift/daos/baby_repository.dart';
 import '../../core/utils/date_time_utils.dart';
 
@@ -27,6 +32,12 @@ class DailySummary {
   final int diaryCount;
   final int vaccineCount;
   final List<String> vaccineNames;
+  final int quoteCount;
+  final int activityCount;
+  final int expenseCount;
+  final double totalExpenseAmount;
+  final int photoCount;
+  final int audioCount;
 
   DailySummary({
     required this.date,
@@ -44,6 +55,12 @@ class DailySummary {
     required this.diaryCount,
     required this.vaccineCount,
     required this.vaccineNames,
+    this.quoteCount = 0,
+    this.activityCount = 0,
+    this.expenseCount = 0,
+    this.totalExpenseAmount = 0,
+    this.photoCount = 0,
+    this.audioCount = 0,
   });
 }
 
@@ -108,6 +125,11 @@ class SummaryService {
   late final VaccineRepository _vaccineRepository;
   late final DiaryRepository _diaryRepository;
   late final GrowthRepository _growthRepository;
+  late final QuoteRepository _quoteRepository;
+  late final ActivityRepository _activityRepository;
+  late final ExpenseRepository _expenseRepository;
+  late final PhotoRepository _photoRepository;
+  late final AudioRepository _audioRepository;
   late final BabyRepository _babyRepository;
 
   SummaryService(this._db) {
@@ -120,6 +142,11 @@ class SummaryService {
     _vaccineRepository = VaccineRepository(_db);
     _diaryRepository = DiaryRepository(_db);
     _growthRepository = GrowthRepository(_db);
+    _quoteRepository = QuoteRepository(_db);
+    _activityRepository = ActivityRepository(_db);
+    _expenseRepository = ExpenseRepository(_db);
+    _photoRepository = PhotoRepository(_db);
+    _audioRepository = AudioRepository(_db);
     _babyRepository = BabyRepository(_db);
   }
 
@@ -166,6 +193,17 @@ class SummaryService {
       end,
     );
 
+    final quotes = await _quoteRepository.getQuotesByDateRange(babyId, start, end);
+    final activities = await _activityRepository.getActivitiesByDateRange(babyId, start, end);
+    final expenses = await _expenseRepository.getExpensesByDateRange(babyId, start, end);
+    final photos = await _photoRepository.getPhotosByDateRange(babyId, start, end);
+    final audios = await _audioRepository.getAudiosByDateRange(babyId, start, end);
+
+    double totalExpense = 0;
+    for (final e in expenses) {
+      totalExpense += e.amount;
+    }
+
     return DailySummary(
       date: date,
       ageLabel: ageLabel,
@@ -183,6 +221,12 @@ class SummaryService {
       diaryCount: diaries.length,
       vaccineCount: dayVaccines.length,
       vaccineNames: dayVaccines.map((v) => v.vaccineName).toList(),
+      quoteCount: quotes.length,
+      activityCount: activities.length,
+      expenseCount: expenses.length,
+      totalExpenseAmount: totalExpense,
+      photoCount: photos.length,
+      audioCount: audios.length,
     );
   }
 
@@ -204,7 +248,12 @@ class SummaryService {
         summary.diaperCount > 0 ||
         summary.milestoneCount > 0 ||
         summary.diaryCount > 0 ||
-        summary.vaccineCount > 0;
+        summary.vaccineCount > 0 ||
+        summary.quoteCount > 0 ||
+        summary.activityCount > 0 ||
+        summary.expenseCount > 0 ||
+        summary.photoCount > 0 ||
+        summary.audioCount > 0;
 
     if (!hasData) {
       buffer.writeln('今天还没有记录呢~ 📝');
@@ -274,6 +323,21 @@ class SummaryService {
     }
     if (summary.diaryCount > 0) {
       highlights.add('📝 写了 ${summary.diaryCount} 篇日记');
+    }
+    if (summary.quoteCount > 0) {
+      highlights.add('💬 记录了 ${summary.quoteCount} 条亲子语录');
+    }
+    if (summary.activityCount > 0) {
+      highlights.add('🤹 进行了 ${summary.activityCount} 次亲子互动');
+    }
+    if (summary.expenseCount > 0) {
+      highlights.add('💰 消费 ${summary.expenseCount} 笔，共 ¥${summary.totalExpenseAmount.toStringAsFixed(2)}');
+    }
+    if (summary.photoCount > 0) {
+      highlights.add('📷 拍摄了 ${summary.photoCount} 张照片');
+    }
+    if (summary.audioCount > 0) {
+      highlights.add('🎙️ 录制了 ${summary.audioCount} 段声音');
     }
 
     if (highlights.isNotEmpty) {
@@ -434,4 +498,313 @@ class SummaryService {
       highlights: highlights,
     );
   }
+
+  Future<AnnualSummary> getAnnualSummary(String babyId, int year) async {
+    final start = DateTime(year, 1, 1);
+    final end = DateTime(year, 12, 31, 23, 59, 59);
+
+    final baby = await _babyRepository.getBabyById(babyId);
+    String ageLabel = '';
+    if (baby != null) {
+      final age = DateTimeUtils.calculateAge(baby.birthDate, now: end);
+      ageLabel = '${age.years}岁${age.months}月${age.days}天';
+    }
+
+    int totalFeeding = 0;
+    double totalMilk = 0;
+    int totalSleep = 0;
+    int totalSleepCount = 0;
+    int totalDiaper = 0;
+    int totalDirtyDiaper = 0;
+    int totalTemp = 0;
+    int totalMilestone = 0;
+    int totalVaccine = 0;
+    int totalDiary = 0;
+    int totalQuote = 0;
+    int totalActivity = 0;
+    int totalExpense = 0;
+    double totalExpenseAmount = 0;
+    int totalPhoto = 0;
+    int totalAudio = 0;
+
+    final daysInYear = DateTime(year, 12, 31).day;
+    for (int i = 0; i < daysInYear; i++) {
+      final day = DateTime(year, 1, 1).add(Duration(days: i));
+      if (day.isAfter(DateTime.now())) break;
+
+      final feedingStats = await _feedingRepository.getDailyStats(babyId, day);
+      totalFeeding += feedingStats['count'] as int? ?? 0;
+      totalMilk += (feedingStats['totalAmount'] as num?)?.toDouble() ?? 0;
+
+      final sleepStats = await _sleepRepository.getDailyStats(babyId, day);
+      totalSleep += sleepStats['totalDurationMinutes'] as int? ?? 0;
+      totalSleepCount += sleepStats['count'] as int? ?? 0;
+
+      final diaperStats = await _diaperRepository.getDailyStats(babyId, day);
+      totalDiaper += diaperStats['count'] as int? ?? 0;
+      totalDirtyDiaper += (diaperStats['dirtyCount'] as int? ?? 0) +
+          (diaperStats['mixedCount'] as int? ?? 0);
+    }
+
+    final temps = await _temperatureRepository.getTemperaturesByDateRange(
+      babyId,
+      start,
+      end,
+    );
+    totalTemp = temps.length;
+
+    final milestones = await _milestoneRepository.getMilestonesByBabyId(babyId);
+    final yearMilestones = milestones.where((m) {
+      if (m.achieveDate == null) return false;
+      return m.achieveDate!.year == year;
+    }).toList();
+    totalMilestone = yearMilestones.length;
+
+    final vaccines = await _vaccineRepository.getVaccinesByBabyId(babyId);
+    final yearVaccines = vaccines.where((v) {
+      if (v.vaccinationDate == null) return false;
+      return v.vaccinationDate!.year == year;
+    }).toList();
+    totalVaccine = yearVaccines.length;
+
+    final diaries = await _diaryRepository.getDiariesByDateRange(
+      babyId,
+      start,
+      end,
+    );
+    totalDiary = diaries.length;
+
+    final quotes = await _quoteRepository.getQuotesByDateRange(babyId, start, end);
+    totalQuote = quotes.length;
+
+    final activities = await _activityRepository.getActivitiesByDateRange(babyId, start, end);
+    totalActivity = activities.length;
+
+    final expenses = await _expenseRepository.getExpensesByDateRange(babyId, start, end);
+    totalExpense = expenses.length;
+    for (final e in expenses) {
+      totalExpenseAmount += e.amount;
+    }
+
+    final photos = await _photoRepository.getPhotosByDateRange(babyId, start, end);
+    totalPhoto = photos.length;
+
+    final audios = await _audioRepository.getAudiosByDateRange(babyId, start, end);
+    totalAudio = audios.length;
+
+    final growthRecords = await _growthRepository.getGrowthByDateRange(
+      babyId,
+      start,
+      end,
+    );
+    growthRecords.sort((a, b) => a.recordDate.compareTo(b.recordDate));
+
+    double? weightChange;
+    double? heightChange;
+    if (growthRecords.length >= 2) {
+      final first = growthRecords.first;
+      final last = growthRecords.last;
+      if (first.weight != null && last.weight != null) {
+        weightChange = last.weight! - first.weight!;
+      }
+      if (first.height != null && last.height != null) {
+        heightChange = last.height! - first.height!;
+      }
+    }
+
+    final highlights = <String>[];
+    if (yearMilestones.isNotEmpty) {
+      highlights.add('🏆 达成 ${yearMilestones.length} 个成长里程碑');
+    }
+    if (yearVaccines.isNotEmpty) {
+      highlights.add('💉 完成 ${yearVaccines.length} 剂疫苗接种');
+    }
+    if (totalDiary > 0) {
+      highlights.add('📝 记录了 ${totalDiary} 篇成长日记');
+    }
+    if (totalQuote > 0) {
+      highlights.add('💬 收录 ${totalQuote} 条亲子语录');
+    }
+    if (totalActivity > 0) {
+      highlights.add('🤹 进行 ${totalActivity} 次亲子互动');
+    }
+    if (totalExpense > 0) {
+      highlights.add('💰 年度消费 ¥${totalExpenseAmount.toStringAsFixed(2)}');
+    }
+    if (totalPhoto > 0) {
+      highlights.add('📷 拍摄 ${totalPhoto} 张珍贵照片');
+    }
+    if (totalAudio > 0) {
+      highlights.add('🎙️ 录制 ${totalAudio} 段声音记忆');
+    }
+    if (weightChange != null && weightChange > 0) {
+      highlights.add('体重增长 ${weightChange.toStringAsFixed(2)}kg');
+    }
+    if (heightChange != null && heightChange > 0) {
+      highlights.add('身高增长 ${heightChange.toStringAsFixed(1)}cm');
+    }
+
+    return AnnualSummary(
+      year: year,
+      ageLabel: ageLabel,
+      feedingCount: totalFeeding,
+      totalMilkMl: totalMilk,
+      sleepCount: totalSleepCount,
+      totalSleepMinutes: totalSleep,
+      diaperCount: totalDiaper,
+      dirtyDiaperCount: totalDirtyDiaper,
+      temperatureCount: totalTemp,
+      milestoneCount: totalMilestone,
+      milestoneNames: yearMilestones.map((m) => m.name).toList(),
+      diaryCount: totalDiary,
+      vaccineCount: totalVaccine,
+      vaccineNames: yearVaccines.map((v) => v.vaccineName).toList(),
+      quoteCount: totalQuote,
+      activityCount: totalActivity,
+      expenseCount: totalExpense,
+      totalExpenseAmount: totalExpenseAmount,
+      photoCount: totalPhoto,
+      audioCount: totalAudio,
+      weightChange: weightChange,
+      heightChange: heightChange,
+      highlights: highlights,
+    );
+  }
+
+  Future<String> generateAnnualReportText(
+    String babyId,
+    int year, {
+    String babyName = '小元宝',
+  }) async {
+    final summary = await getAnnualSummary(babyId, year);
+
+    final buffer = StringBuffer();
+    buffer.writeln('🎉 $babyName 的 ${year}年度成长报告');
+    buffer.writeln('');
+
+    if (summary.feedingCount == 0 &&
+        summary.sleepCount == 0 &&
+        summary.diaperCount == 0 &&
+        summary.milestoneCount == 0) {
+      buffer.writeln('今年还没有足够的记录呢~ 📝');
+      buffer.writeln('');
+      buffer.writeln('愿 $babyName 在新的一年里健康快乐成长 💖');
+      return buffer.toString();
+    }
+
+    buffer.writeln('📊 年度数据概览');
+    buffer.writeln('');
+
+    if (summary.feedingCount > 0) {
+      buffer.writeln('🍼 全年喂养 ${summary.feedingCount} 次');
+      if (summary.totalMilkMl > 0) {
+        buffer.writeln('累计喝奶 ${summary.totalMilkMl.toStringAsFixed(0)}ml');
+      }
+    }
+
+    if (summary.sleepCount > 0) {
+      final hours = summary.totalSleepMinutes ~/ 60;
+      buffer.writeln('😴 全年睡眠 ${summary.sleepCount} 次，共 ${hours} 小时');
+    }
+
+    if (summary.diaperCount > 0) {
+      buffer.writeln('👶 全年换尿布 ${summary.diaperCount} 次');
+    }
+
+    if (summary.temperatureCount > 0) {
+      buffer.writeln('🌡️ 全年量体温 ${summary.temperatureCount} 次');
+    }
+
+    buffer.writeln('');
+
+    if (summary.milestoneCount > 0) {
+      buffer.writeln('🏆 年度里程碑');
+      buffer.writeln('今年达成了 ${summary.milestoneCount} 个成长里程碑：');
+      for (final name in summary.milestoneNames) {
+        buffer.writeln('  - $name');
+      }
+      buffer.writeln('');
+    }
+
+    if (summary.vaccineCount > 0) {
+      buffer.writeln('💉 疫苗接种');
+      buffer.writeln('今年完成了 ${summary.vaccineCount} 剂疫苗接种：');
+      for (final name in summary.vaccineNames) {
+        buffer.writeln('  - $name');
+      }
+      buffer.writeln('');
+    }
+
+    if (summary.highlights.isNotEmpty) {
+      buffer.writeln('✨ 年度亮点');
+      for (final h in summary.highlights) {
+        buffer.writeln(h);
+      }
+      buffer.writeln('');
+    }
+
+    buffer.writeln('💖 年度寄语');
+    if (summary.milestoneCount > 0) {
+      buffer.writeln('这一年，你学会了 ${summary.milestoneCount} 项新本领，每一次进步都让爸爸妈妈无比骄傲！');
+    } else {
+      buffer.writeln('这一年，你健康快乐地成长着，每一天都是爸爸妈妈最珍贵的礼物~');
+    }
+    buffer.writeln('');
+    buffer.writeln('愿新的一年里，你继续勇敢探索，快乐成长！');
+    buffer.writeln('爸爸妈妈永远爱你 💖');
+
+    return buffer.toString();
+  }
+}
+
+class AnnualSummary {
+  final int year;
+  final String ageLabel;
+  final int feedingCount;
+  final double totalMilkMl;
+  final int sleepCount;
+  final int totalSleepMinutes;
+  final int diaperCount;
+  final int dirtyDiaperCount;
+  final int temperatureCount;
+  final int milestoneCount;
+  final List<String> milestoneNames;
+  final int diaryCount;
+  final int vaccineCount;
+  final List<String> vaccineNames;
+  final int quoteCount;
+  final int activityCount;
+  final int expenseCount;
+  final double totalExpenseAmount;
+  final int photoCount;
+  final int audioCount;
+  final double? weightChange;
+  final double? heightChange;
+  final List<String> highlights;
+
+  AnnualSummary({
+    required this.year,
+    required this.ageLabel,
+    required this.feedingCount,
+    required this.totalMilkMl,
+    required this.sleepCount,
+    required this.totalSleepMinutes,
+    required this.diaperCount,
+    required this.dirtyDiaperCount,
+    required this.temperatureCount,
+    required this.milestoneCount,
+    required this.milestoneNames,
+    required this.diaryCount,
+    required this.vaccineCount,
+    required this.vaccineNames,
+    required this.quoteCount,
+    required this.activityCount,
+    required this.expenseCount,
+    required this.totalExpenseAmount,
+    required this.photoCount,
+    required this.audioCount,
+    this.weightChange,
+    this.heightChange,
+    required this.highlights,
+  });
 }

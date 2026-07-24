@@ -32,6 +32,12 @@ import 'tables/emotion_records.dart';
 import 'tables/hobby_records.dart';
 import 'tables/photo_records.dart';
 import 'tables/audio_records.dart';
+import 'tables/quote_records.dart';
+import 'tables/activity_records.dart';
+import 'tables/growth_message_records.dart';
+import 'tables/expense_records.dart';
+import 'tables/item_records.dart';
+import 'tables/size_records.dart';
 
 part 'app_database.g.dart';
 
@@ -65,6 +71,12 @@ part 'app_database.g.dart';
     HobbyRecords,
     PhotoRecords,
     AudioRecords,
+    QuoteRecords,
+    ActivityRecords,
+    GrowthMessageRecords,
+    ExpenseRecords,
+    ItemRecords,
+    SizeRecords,
   ],
 )
 class AppDatabase extends _$AppDatabase {

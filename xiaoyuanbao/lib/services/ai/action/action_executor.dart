@@ -10,6 +10,9 @@ import '../../../data/drift/daos/growth_repository.dart';
 import '../../../data/drift/daos/vaccine_repository.dart';
 import '../../../data/drift/daos/milestone_repository.dart';
 import '../../../data/drift/daos/diary_repository.dart';
+import '../../../data/drift/daos/quote_repository.dart';
+import '../../../data/drift/daos/activity_repository.dart';
+import '../../../data/drift/daos/expense_repository.dart';
 import '../../../data/drift/tables/feeding_records.dart';
 import '../../../data/drift/tables/sleep_records.dart';
 import '../../../data/drift/tables/diaper_records.dart';
@@ -70,6 +73,9 @@ class ActionExecutor {
   final VaccineRepository? vaccineRepository;
   final MilestoneRepository? milestoneRepository;
   final DiaryRepository? diaryRepository;
+  final QuoteRepository? quoteRepository;
+  final ActivityRepository? activityRepository;
+  final ExpenseRepository? expenseRepository;
 
   ActionExecutor({
     this.babyRepository,
@@ -82,6 +88,9 @@ class ActionExecutor {
     this.vaccineRepository,
     this.milestoneRepository,
     this.diaryRepository,
+    this.quoteRepository,
+    this.activityRepository,
+    this.expenseRepository,
   });
 
   Future<ActionResult> execute(
@@ -114,6 +123,12 @@ class ActionExecutor {
           return _recordMilestone(entities, babyId);
         case AiIntent.recordDiary:
           return _recordDiary(entities, babyId);
+        case AiIntent.recordQuote:
+          return _recordQuote(entities, babyId);
+        case AiIntent.recordActivity:
+          return _recordActivity(entities, babyId);
+        case AiIntent.recordExpense:
+          return _recordExpense(entities, babyId);
         case AiIntent.queryFeedingToday:
           return _queryFeedingToday(babyId);
         case AiIntent.querySleepToday:
@@ -880,6 +895,121 @@ class ActionExecutor {
       message: '每日总结已生成',
       recordType: 'daily_summary',
       data: data,
+    );
+  }
+
+  Future<ActionResult> _recordQuote(
+    Map<String, dynamic> entities,
+    String babyId,
+  ) async {
+    if (quoteRepository == null) {
+      return ActionResult.failure('语录记录服务未初始化');
+    }
+
+    final content = entities['content'] as String?;
+    if (content == null || content.isEmpty) {
+      return ActionResult.failure('请提供语录内容');
+    }
+
+    final speaker = entities['speaker'] as String? ?? 'baby';
+    final emotion = entities['emotion'] as String?;
+    final now = DateTime.now();
+    final isFavorite = entities['isFavorite'] as bool? ?? false;
+
+    final id = await quoteRepository!.insert(
+      QuoteRecordsCompanion(
+        babyId: Value(babyId),
+        speaker: Value(speaker),
+        content: Value(content),
+        emotion: Value(emotion),
+        recordTime: Value(now),
+        isFavorite: Value(isFavorite),
+      ),
+    );
+
+    return ActionResult.success(
+      message: '语录记录已创建',
+      recordId: id.id,
+      recordType: 'quote',
+      data: {
+        'speaker': speaker,
+        'content': content,
+        'emotion': emotion,
+        'recordTime': now.toIso8601String(),
+      },
+    );
+  }
+
+  Future<ActionResult> _recordActivity(
+    Map<String, dynamic> entities,
+    String babyId,
+  ) async {
+    if (activityRepository == null) {
+      return ActionResult.failure('互动记录服务未初始化');
+    }
+
+    final activityType = entities['activityType'] as String? ?? 'other';
+    final description = entities['description'] as String?;
+    final now = DateTime.now();
+
+    final id = await activityRepository!.insert(
+      ActivityRecordsCompanion(
+        babyId: Value(babyId),
+        activityType: Value(activityType),
+        startTime: Value(now),
+        description: Value(description),
+      ),
+    );
+
+    return ActionResult.success(
+      message: '互动记录已创建',
+      recordId: id.id,
+      recordType: 'activity',
+      data: {
+        'activityType': activityType,
+        'description': description,
+        'startTime': now.toIso8601String(),
+      },
+    );
+  }
+
+  Future<ActionResult> _recordExpense(
+    Map<String, dynamic> entities,
+    String babyId,
+  ) async {
+    if (expenseRepository == null) {
+      return ActionResult.failure('费用记录服务未初始化');
+    }
+
+    final amount = entities['amount'] as double?;
+    if (amount == null || amount <= 0) {
+      return ActionResult.failure('请提供有效金额');
+    }
+
+    final category = entities['category'] as String? ?? 'other';
+    final description = entities['description'] as String?;
+    final now = DateTime.now();
+
+    final id = await expenseRepository!.insert(
+      ExpenseRecordsCompanion(
+        babyId: Value(babyId),
+        category: Value(category),
+        amount: Value(amount),
+        description: Value(description),
+        expenseDate: Value(now),
+      ),
+    );
+
+    return ActionResult.success(
+      message: '费用记录已创建',
+      recordId: id.id,
+      recordType: 'expense',
+      data: {
+        'category': category,
+        'amount': amount,
+        'description': description,
+        'expenseDate': now.toIso8601String(),
+      },
     );
   }
 }

@@ -30,6 +30,12 @@ import '../../data/drift/daos/emotion_repository.dart';
 import '../../data/drift/daos/hobby_repository.dart';
 import '../../data/drift/daos/photo_repository.dart';
 import '../../data/drift/daos/audio_repository.dart';
+import '../../data/drift/daos/quote_repository.dart';
+import '../../data/drift/daos/activity_repository.dart';
+import '../../data/drift/daos/growth_message_repository.dart';
+import '../../data/drift/daos/expense_repository.dart';
+import '../../data/drift/daos/item_repository.dart';
+import '../../data/drift/daos/size_repository.dart';
 import '../../services/ai/ai_service.dart';
 import '../../services/media/photo_service.dart';
 import '../../services/media/audio_service.dart';
@@ -185,6 +191,36 @@ final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
 final audioRepositoryProvider = Provider<AudioRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return AudioRepository(db);
+});
+
+final quoteRepositoryProvider = Provider<QuoteRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return QuoteRepository(db);
+});
+
+final activityRepositoryProvider = Provider<ActivityRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ActivityRepository(db);
+});
+
+final growthMessageRepositoryProvider = Provider<GrowthMessageRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return GrowthMessageRepository(db);
+});
+
+final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ExpenseRepository(db);
+});
+
+final itemRepositoryProvider = Provider<ItemRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ItemRepository(db);
+});
+
+final sizeRepositoryProvider = Provider<SizeRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return SizeRepository(db);
 });
 
 final photoServiceProvider = Provider<PhotoService>((ref) {

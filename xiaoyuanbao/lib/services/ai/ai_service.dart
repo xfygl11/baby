@@ -11,6 +11,9 @@ import '../../data/drift/daos/growth_repository.dart';
 import '../../data/drift/daos/vaccine_repository.dart';
 import '../../data/drift/daos/milestone_repository.dart';
 import '../../data/drift/daos/diary_repository.dart';
+import '../../data/drift/daos/quote_repository.dart';
+import '../../data/drift/daos/activity_repository.dart';
+import '../../data/drift/daos/expense_repository.dart';
 import '../../data/drift/daos/ai_chat_repository.dart';
 import 'intent/intent_classifier.dart';
 import 'entity/entity_extractor.dart';
@@ -55,6 +58,9 @@ class AiService extends ChangeNotifier {
       vaccineRepository: VaccineRepository(_db),
       milestoneRepository: MilestoneRepository(_db),
       diaryRepository: DiaryRepository(_db),
+      quoteRepository: QuoteRepository(_db),
+      activityRepository: ActivityRepository(_db),
+      expenseRepository: ExpenseRepository(_db),
     );
     
     _replyGenerator = ReplyGenerator();
