@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/theme_builder.dart';
 import 'core/constants/app_enums.dart';
 import 'core/utils/date_time_utils.dart';
+import 'services/notification/notification_service.dart';
 import 'presentation/providers/app_providers.dart';
 import 'presentation/pages/main_shell.dart';
 
@@ -32,6 +33,10 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 
   Future<void> _initializeApp() async {
+    // 初始化通知服务
+    await NotificationService().init();
+    await NotificationService().requestPermissions();
+
     final babyRepo = ref.read(babyRepositoryProvider);
     final vaccineService = ref.read(vaccineServiceProvider);
     final milestoneService = ref.read(milestoneServiceProvider);

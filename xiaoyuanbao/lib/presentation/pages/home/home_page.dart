@@ -7,6 +7,7 @@ import '../../../core/constants/app_enums.dart';
 import '../../../data/drift/app_database.dart';
 import '../providers/app_providers.dart';
 import '../ai_assistant/ai_assistant_page.dart';
+import '../widgets/smart_popup_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -25,6 +26,19 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
     _now = DateTime.now();
     WidgetsBinding.instance.addObserver(this);
     _startTimer();
+    _checkForPopup();
+  }
+
+  Future<void> _checkForPopup() async {
+    final babyAsync = await ref.read(currentBabyProvider.future);
+    if (babyAsync == null || !mounted) return;
+
+    final popupService = ref.read(smartPopupServiceProvider);
+    final popup = await popupService.checkForPopup(babyAsync.id);
+
+    if (popup != null && mounted) {
+      SmartPopupWidget.show(context, popup);
+    }
   }
 
   @override
@@ -38,6 +52,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _startTimer();
+      _checkForPopup();
     } else {
       _pauseTimer();
     }
