@@ -4,7 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../services/ai/ai_service.dart';
-import '../providers/app_providers.dart';
+import '../../providers/app_providers.dart';
 
 class ChatMessageItem {
   final String id;

@@ -20,4 +20,4 @@ class ExamRecords extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-enum ExamType { unitTest, midterm, final, competition, quiz }
+enum ExamType { unitTest, midterm, finalExam, competition, quiz }

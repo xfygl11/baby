@@ -40,7 +40,7 @@ dependencies:
   
   permission_handler: ^11.3.1
   
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.4.0
   flutter_sound: ^9.20.3
   
   collection: ^1.18.0

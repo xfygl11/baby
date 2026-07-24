@@ -970,7 +970,7 @@ class RecordRepository {
     parts.add(switch (examType) {
       ExamType.unitTest => '单元测试',
       ExamType.midterm => '期中考试',
-      ExamType.final => '期末考试',
+      ExamType.finalExam => '期末考试',
       ExamType.competition => '竞赛',
       ExamType.quiz => '小测验',
     });

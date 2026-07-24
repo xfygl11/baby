@@ -5,13 +5,14 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../data/drift/app_database.dart';
-import '../providers/app_providers.dart';
+import '../../../services/timeline/timeline_service.dart';
+import '../../providers/app_providers.dart';
 import '../ai_assistant/ai_assistant_page.dart';
 import '../time_capsule/time_capsule_page.dart';
 import '../word_tracker/word_tracker_page.dart';
 import '../on_this_day/on_this_day_page.dart';
 import '../story/story_generator_page.dart';
-import '../widgets/smart_popup_widget.dart';
+import '../../widgets/smart_popup_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -182,7 +183,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
   Widget _buildFeatureEntries(AppTheme theme, GrowthStage stage) {
     final entries = <_FeatureEntry>[
       _FeatureEntry(
-        icon: Icons.mailbox_outlined,
+        icon: Icons.mark_email_unread_outlined,
         label: '时间胶囊',
         color: const Color(0xFFE91E63),
         page: const TimeCapsulePage(),
@@ -893,7 +894,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
           SizedBox(width: theme.spacingMd),
           Expanded(
             child: _QuickActionButton(
-              icon: Icons.trophy,
+              icon: Icons.emoji_events,
               label: '获奖',
               onTap: () {},
             ),
