@@ -78,6 +78,7 @@ class ThemeBuilder {
     required String stageKey,
     required bool isDark,
     ColorScheme? dynamicColorScheme,
+    double fontSizeScale = 1.0,
   }) {
     final stage = isDark 
         ? stageThemesDark[stageKey]! 
@@ -147,37 +148,37 @@ class ThemeBuilder {
       
       textTheme: TextTheme(
         displayLarge: TextStyle(
-          fontSize: 40,
+          fontSize: 40 * fontSizeScale,
           fontWeight: FontWeight.w800,
           color: appTheme.textPrimary,
           letterSpacing: -0.02,
         ),
         titleLarge: TextStyle(
-          fontSize: 22,
+          fontSize: 22 * fontSizeScale,
           fontWeight: FontWeight.w600,
           color: appTheme.textPrimary,
         ),
         titleMedium: TextStyle(
-          fontSize: 18,
+          fontSize: 18 * fontSizeScale,
           fontWeight: FontWeight.w600,
           color: appTheme.textPrimary,
         ),
         bodyLarge: TextStyle(
-          fontSize: 16,
+          fontSize: 16 * fontSizeScale,
           color: appTheme.textPrimary,
           height: 1.5,
         ),
         bodyMedium: TextStyle(
-          fontSize: 15,
+          fontSize: 15 * fontSizeScale,
           color: appTheme.textPrimary,
           height: 1.5,
         ),
         bodySmall: TextStyle(
-          fontSize: 13,
+          fontSize: 13 * fontSizeScale,
           color: appTheme.textSecondary,
         ),
         labelLarge: TextStyle(
-          fontSize: 15,
+          fontSize: 15 * fontSizeScale,
           fontWeight: FontWeight.w500,
           color: appTheme.textPrimary,
         ),

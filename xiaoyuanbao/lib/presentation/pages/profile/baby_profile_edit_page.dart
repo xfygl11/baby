@@ -13,7 +13,7 @@ class BabyProfileEditPage extends StatefulWidget {
 class _BabyProfileEditPageState extends State<BabyProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _nameController = TextEditingController(text: '小元宝');
+  final TextEditingController _nameController = TextEditingController(text: '萱萱');
   BabyGender _gender = BabyGender.female;
   DateTime _birthDate = DateTime(2024, 1, 15);
   TimeOfDay _birthTime = const TimeOfDay(hour: 8, minute: 30);

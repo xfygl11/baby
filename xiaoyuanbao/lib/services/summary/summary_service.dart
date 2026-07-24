@@ -233,7 +233,7 @@ class SummaryService {
   Future<String> generateDailySummaryText(
     String babyId,
     DateTime date, {
-    String babyName = '小元宝',
+    String babyName = '萱萱',
   }) async {
     final summary = await getDailySummary(babyId, date);
     final dateStr = DateTimeUtils.formatDateCn(date);
@@ -674,7 +674,7 @@ class SummaryService {
   Future<String> generateAnnualReportText(
     String babyId,
     int year, {
-    String babyName = '小元宝',
+    String babyName = '萱萱',
   }) async {
     final summary = await getAnnualSummary(babyId, year);
 

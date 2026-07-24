@@ -716,6 +716,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
                 onTap: () {
                   setState(() => _fontSize = option);
+                  final scale = switch (option) {
+                    FontSizeOption.standard => 1.0,
+                    FontSizeOption.large => 1.15,
+                    FontSizeOption.extraLarge => 1.30,
+                  };
+                  ref.read(fontSizeScaleProvider.notifier).state = scale;
                   Navigator.of(context).pop();
                 },
               );

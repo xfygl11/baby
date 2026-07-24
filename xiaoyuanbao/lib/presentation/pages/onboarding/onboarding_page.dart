@@ -15,7 +15,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
-  final TextEditingController _nameController = TextEditingController(text: '小元宝');
+  final TextEditingController _nameController = TextEditingController(text: '萱萱');
   int _selectedGender = 0;
   DateTime _selectedDate = DateTime(2026, 7, 22, 11, 42, 54);
 

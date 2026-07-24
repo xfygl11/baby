@@ -349,6 +349,10 @@ final themeModeProvider = StateProvider<ThemeMode>((ref) {
   return ThemeMode.system;
 });
 
+final fontSizeScaleProvider = StateProvider<double>((ref) {
+  return 1.0;
+});
+
 final themeStageProvider = StateProvider<GrowthStage>((ref) {
   return GrowthStage.infant;
 });

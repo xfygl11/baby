@@ -46,7 +46,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     if (activeBaby == null) {
       final birthDate = DateTime(2026, 7, 22, 11, 42, 54);
       final babyId = await babyRepo.addBaby(
-        name: '小元宝',
+        name: '萱萱',
         gender: 0,
         birthDate: birthDate,
       );
@@ -89,6 +89,7 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   Widget build(BuildContext context) {
     final themeMode = ref.watch(themeModeProvider);
+    final fontSizeScale = ref.watch(fontSizeScaleProvider);
     final babyAsync = ref.watch(currentBabyProvider);
 
     String stageKey = 'infant';
@@ -100,15 +101,17 @@ class _MyAppState extends ConsumerState<MyApp> {
     });
 
     return MaterialApp(
-      title: '小元宝成长记',
+      title: '萱萱成长记',
       debugShowCheckedModeBanner: false,
       theme: ThemeBuilder.buildTheme(
         stageKey: stageKey,
         isDark: false,
+        fontSizeScale: fontSizeScale,
       ),
       darkTheme: ThemeBuilder.buildTheme(
         stageKey: stageKey,
         isDark: true,
+        fontSizeScale: fontSizeScale,
       ),
       themeMode: themeMode,
       home: _isInitialized ? const MainShell() : _buildSplashScreen(),
@@ -124,7 +127,7 @@ class _MyAppState extends ConsumerState<MyApp> {
             Icon(Icons.child_care, size: 80, color: Colors.pink.shade400),
             const SizedBox(height: 24),
             const Text(
-              '小元宝成长记',
+              '萱萱成长记',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

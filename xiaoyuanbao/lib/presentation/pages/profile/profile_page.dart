@@ -69,7 +69,7 @@ class ProfilePage extends ConsumerWidget {
                 context,
                 appTheme,
                 icon: Icons.info_outline,
-                title: '关于小元宝',
+                title: '关于萱萱',
                 subtitle: 'v1.0.0',
               ),
               _buildListTile(

@@ -13,7 +13,7 @@ class ReplyGenerator {
     }
 
     final babyName = context['babyName'] as String? ?? '宝宝';
-    final babyNickname = context['babyNickname'] as String? ?? '小元宝';
+    final babyNickname = context['babyNickname'] as String? ?? '萱萱';
 
     switch (intent) {
       case AiIntent.recordFeeding:

@@ -12,6 +12,7 @@ import '../time_capsule/time_capsule_page.dart';
 import '../word_tracker/word_tracker_page.dart';
 import '../on_this_day/on_this_day_page.dart';
 import '../story/story_generator_page.dart';
+import '../growth/growth_page.dart';
 import '../../widgets/smart_popup_widget.dart';
 
 class HomePage extends ConsumerStatefulWidget {
@@ -113,7 +114,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
             Icon(Icons.child_care, size: 80, color: theme.stageAccent),
             SizedBox(height: theme.spacingXl),
             Text(
-              '小元宝成长记',
+              '萱萱成长记',
               style: Theme.of(context).textTheme.displayLarge,
               textAlign: TextAlign.center,
             ),
@@ -282,15 +283,18 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
       children: [
         Row(
           children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: theme.stageAccent,
-              child: Text(
-                baby.name.isNotEmpty ? baby.name[0] : '宝',
-                style: TextStyle(
-                  color: theme.onAccent,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
+            Semantics(
+              label: '${baby.name}的头像',
+              child: CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.stageAccent,
+                child: Text(
+                  baby.name.isNotEmpty ? baby.name[0] : '宝',
+                  style: TextStyle(
+                    color: theme.onAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
                 ),
               ),
             ),
@@ -314,35 +318,39 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
           ],
         ),
         SizedBox(height: theme.spacingXl),
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(theme.spacingXl),
-          decoration: BoxDecoration(
-            color: theme.stageSurface,
-            borderRadius: BorderRadius.circular(theme.radiusLg),
-            border: Border.all(color: theme.stageAccent.withOpacity(0.2)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                '${age.years}岁 ${age.months}月 ${age.days}天',
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              SizedBox(height: theme.spacingSm),
-              Text(
-                '${age.hours.toString().padLeft(2, '0')}:${age.minutes.toString().padLeft(2, '0')}:${age.seconds.toString().padLeft(2, '0')}',
-                style: TextStyle(
-                  color: theme.textSecondary,
-                  fontSize: 20,
-                  fontFamily: 'monospace',
-                  letterSpacing: 2,
+        Semantics(
+          label: '年龄计时器：${age.years}岁${age.months}个月${age.days}天',
+          value: '${age.hours}:${age.minutes}:${age.seconds}',
+          child: Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(theme.spacingXl),
+            decoration: BoxDecoration(
+              color: theme.stageSurface,
+              borderRadius: BorderRadius.circular(theme.radiusLg),
+              border: Border.all(color: theme.stageAccent.withOpacity(0.2)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  '${age.years}岁 ${age.months}月 ${age.days}天',
+                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
-              ),
-            ],
+                SizedBox(height: theme.spacingSm),
+                Text(
+                  '${age.hours.toString().padLeft(2, '0')}:${age.minutes.toString().padLeft(2, '0')}:${age.seconds.toString().padLeft(2, '0')}',
+                  style: TextStyle(
+                    color: theme.textSecondary,
+                    fontSize: 20,
+                    fontFamily: 'monospace',
+                    letterSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -444,7 +452,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '今日喂养',
               primary: '${feeding['count']}次',
               secondary: '${(feeding['totalAmount'] as double).toStringAsFixed(0)}ml',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -454,7 +462,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '今日睡眠',
               primary: '${sleep['count']}次',
               secondary: _formatDuration(sleep['totalDurationMinutes'] as int),
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -470,7 +478,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               secondary: vaccine != null && vaccine.scheduledDate != null
                   ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
                   : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
           ),
         ]);
@@ -487,7 +495,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '今日睡眠',
               primary: '${sleep['count']}次',
               secondary: _formatDuration(sleep['totalDurationMinutes'] as int),
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -497,7 +505,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '今日尿布',
               primary: '${(diaper['wetCount'] as int?) ?? 0}湿',
               secondary: '${(diaper['dirtyCount'] as int?) ?? 0}便',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -513,7 +521,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               secondary: vaccine != null && vaccine.scheduledDate != null
                   ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
                   : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
           ),
         ]);
@@ -530,7 +538,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '已达里程碑',
               primary: '${milestones.length}个',
               secondary: milestones.isNotEmpty ? milestones.last.name : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -540,7 +548,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最新成长',
               primary: growth?.weight != null ? '${growth!.weight}kg' : '--',
               secondary: growth?.height != null ? '${growth!.height}cm' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -556,7 +564,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               secondary: vaccine != null && vaccine.scheduledDate != null
                   ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
                   : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
           ),
         ]);
@@ -573,7 +581,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最近考试',
               primary: exam != null ? '${exam.score}分' : '--',
               secondary: exam != null ? '${exam.examName}' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -583,7 +591,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最近获奖',
               primary: award != null ? award.awardName : '--',
               secondary: award != null ? '${award.awardingOrganization}' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -593,7 +601,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '所在学校',
               primary: school != null ? school.schoolName : '--',
               secondary: school != null ? '${school.grade}年级' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
         ]);
@@ -610,7 +618,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最近考试',
               primary: exam != null ? '${exam.score}分' : '--',
               secondary: exam != null ? '${exam.examName}' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -620,7 +628,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最近获奖',
               primary: award != null ? award.awardName : '--',
               secondary: award != null ? '${award.awardingOrganization}' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
           SizedBox(width: theme.spacingMd),
@@ -630,7 +638,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
               title: '最近情绪',
               primary: emotion != null ? _getEmotionLabel(emotion.emotionType.index) : '--',
               secondary: emotion != null ? '${emotion.triggerEvent ?? ''}' : '--',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiAssistantPage())),
             ),
           ),
         ]);
@@ -978,7 +986,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                 ),
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  '试试问小元宝助手：今天总结一下？',
+                  '试试问萱萱助手：今天总结一下？',
                   style: TextStyle(
                     color: theme.textSecondary,
                     fontSize: 13,

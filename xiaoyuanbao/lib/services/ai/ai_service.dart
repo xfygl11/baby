@@ -122,7 +122,7 @@ class AiService extends ChangeNotifier {
           _dialogStateMachine.pendingIntent ?? intent,
           transition.mergedEntities ?? entities,
           result,
-          {'babyName': '小元宝'},
+          {'babyName': '萱萱'},
         );
       } else if (transition.systemMessage != null) {
         replyText = transition.systemMessage!;
@@ -141,7 +141,7 @@ class AiService extends ChangeNotifier {
           intent,
           entities,
           result,
-          {'babyName': '小元宝'},
+          {'babyName': '萱萱'},
         );
       }
 

@@ -208,7 +208,7 @@ class _TimeCapsulePageState extends ConsumerState<TimeCapsulePage> {
           return EmptyStateWidget(
             icon: Icons.mail_outline,
             title: '还没有时间胶囊',
-            subtitle: '把今天的话封存起来，留给未来的小元宝',
+            subtitle: '把今天的话封存起来，留给未来的萱萱',
             actionLabel: '创建胶囊',
             onAction: () => _showCreateDialog(baby),
           );
@@ -909,7 +909,7 @@ class _CreateCapsuleDialogState extends ConsumerState<_CreateCapsuleDialog> {
                 maxLength: 100,
                 decoration: const InputDecoration(
                   labelText: '标题',
-                  hintText: '给未来的小元宝起个名字',
+                  hintText: '给未来的萱萱起个名字',
                   border: OutlineInputBorder(),
                   counterText: '',
                 ),

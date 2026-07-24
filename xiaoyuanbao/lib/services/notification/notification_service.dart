@@ -53,7 +53,7 @@ class NotificationService {
     AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
       'xiaoyuanbao_channel',
-      '小元宝成长记',
+      '萱萱成长记',
       channelDescription: '宝宝成长记录提醒',
       importance: importance,
       priority: priority,

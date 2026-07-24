@@ -51,8 +51,8 @@ class StoryGeneratorService {
     String? customHint,
   }) async {
     final baby = await _babyRepo.getBabyById(babyId);
-    final name = baby?.name ?? '小元宝';
-    final nickname = '小元宝';
+    final name = baby?.name ?? '萱萱';
+    final nickname = '萱萱';
 
     final ageResult = baby != null
         ? DateTimeUtils.calculateAge(baby.birthDate)
@@ -92,7 +92,7 @@ class StoryGeneratorService {
     String? customHint,
   }) async {
     final baby = await _babyRepo.getBabyById(babyId);
-    final name = baby?.name ?? '小元宝';
+    final name = baby?.name ?? '萱萱';
 
     final ageResult = baby != null
         ? DateTimeUtils.calculateAge(baby.birthDate)
@@ -319,8 +319,8 @@ class StoryGeneratorService {
 
   String _fillTemplate(
     String template, {
-    String name = '小元宝',
-    String nickname = '小元宝',
+    String name = '萱萱',
+    String nickname = '萱萱',
     String ageLabel = '',
     String milestone = '学会了新本领',
     String quote = '今天真开心',
@@ -339,7 +339,7 @@ class StoryGeneratorService {
         .replaceAll('{hint}', hint);
   }
 
-  String _fillTitle(String titleTemplate, {String name = '小元宝', String theme = '', String occasion = ''}) {
+  String _fillTitle(String titleTemplate, {String name = '萱萱', String theme = '', String occasion = ''}) {
     return titleTemplate.replaceAll('{name}', name);
   }
 }

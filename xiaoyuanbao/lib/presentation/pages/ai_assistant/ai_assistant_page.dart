@@ -202,7 +202,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     return Scaffold(
       backgroundColor: theme.stageBg,
       appBar: AppBar(
-        title: const Text('小元宝助手'),
+        title: const Text('萱萱助手'),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -283,7 +283,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
           ),
           SizedBox(height: theme.spacingLg),
           Text(
-            '嗨！我是小元宝的 AI 助手',
+            '嗨！我是萱萱的 AI 助手',
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
@@ -693,29 +693,34 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              InkWell(
-                onTap: isProcessing ? null : _toggleSpeech,
-                borderRadius: BorderRadius.circular(28),
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _isListening ? theme.danger : theme.stageAccent,
-                    shape: BoxShape.circle,
-                    boxShadow: _isListening
-                        ? [
-                            BoxShadow(
-                              color: theme.danger.withOpacity(0.4),
-                              blurRadius: 8,
-                              spreadRadius: 2,
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Icon(
-                    _isListening ? Icons.stop : Icons.mic,
-                    color: theme.onAccent,
-                    size: 24,
+              Semantics(
+                label: _isListening ? '停止语音输入' : '语音输入',
+                button: true,
+                enabled: !isProcessing,
+                child: InkWell(
+                  onTap: isProcessing ? null : _toggleSpeech,
+                  borderRadius: BorderRadius.circular(28),
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _isListening ? theme.danger : theme.stageAccent,
+                      shape: BoxShape.circle,
+                      boxShadow: _isListening
+                          ? [
+                              BoxShadow(
+                                color: theme.danger.withOpacity(0.4),
+                                blurRadius: 8,
+                                spreadRadius: 2,
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Icon(
+                      _isListening ? Icons.stop : Icons.mic,
+                      color: theme.onAccent,
+                      size: 24,
+                    ),
                   ),
                 ),
               ),
