@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
-import '../../../core/constants/app_enums.dart';
 import '../../../core/utils/date_time_utils.dart';
+import '../../../data/drift/app_database.dart';
+import '../../../data/drift/daos/growth_repository.dart';
 import '../../../services/growth/growth_service.dart';
-import '../../../services/vaccine/vaccine_service.dart';
 import '../../../services/milestone/milestone_service.dart';
+import '../../../services/vaccine/vaccine_service.dart';
+import '../../providers/app_providers.dart';
+import '../../widgets/empty_state_widget.dart';
+import '../../widgets/loading_widget.dart';
 
-class GrowthPage extends StatefulWidget {
+class GrowthPage extends ConsumerStatefulWidget {
   const GrowthPage({super.key});
 
   @override
-  State<GrowthPage> createState() => _GrowthPageState();
+  ConsumerState<GrowthPage> createState() => _GrowthPageState();
 }
 
-class _GrowthPageState extends State<GrowthPage> with SingleTickerProviderStateMixin {
+class _GrowthPageState extends ConsumerState<GrowthPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
   @override
@@ -31,96 +37,249 @@ class _GrowthPageState extends State<GrowthPage> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
+    final babyAsync = ref.watch(currentBabyProvider);
 
-    return Scaffold(
-      backgroundColor: theme.stageBg,
-      appBar: AppBar(
-        title: const Text('成长发育'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: theme.stageAccent,
-          unselectedLabelColor: theme.textSecondary,
-          indicatorColor: theme.stageAccent,
-          indicatorWeight: 3,
-          labelStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-          tabs: const [
-            Tab(text: '📈 生长曲线'),
-            Tab(text: '💉 疫苗'),
-            Tab(text: '🏆 里程碑'),
-          ],
+    return babyAsync.when(
+      loading: () => Scaffold(
+        backgroundColor: theme.stageBg,
+        body: const LoadingWidget(message: '加载中...'),
+      ),
+      error: (error, stack) => Scaffold(
+        backgroundColor: theme.stageBg,
+        body: Center(
+          child: Text(
+            '加载失败: $error',
+            style: TextStyle(color: theme.textPrimary),
+          ),
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          GrowthCurveTab(),
-          VaccineTab(),
-          MilestoneTab(),
-        ],
-      ),
+      data: (baby) {
+        if (baby == null) {
+          return Scaffold(
+            backgroundColor: theme.stageBg,
+            appBar: AppBar(title: const Text('成长发育')),
+            body: const EmptyStateWidget(
+              icon: Icons.child_care,
+              title: '尚未添加宝宝',
+              subtitle: '请先在个人中心添加宝宝信息',
+            ),
+          );
+        }
+        return Scaffold(
+          backgroundColor: theme.stageBg,
+          appBar: AppBar(
+            title: const Text('成长发育'),
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: theme.stageAccent,
+              unselectedLabelColor: theme.textSecondary,
+              indicatorColor: theme.stageAccent,
+              indicatorWeight: 3,
+              labelStyle:
+                  const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              tabs: const [
+                Tab(text: '📈 生长曲线'),
+                Tab(text: '💉 疫苗'),
+                Tab(text: '🏆 里程碑'),
+              ],
+            ),
+          ),
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              GrowthCurveTab(baby: baby),
+              VaccineTab(baby: baby),
+              MilestoneTab(baby: baby),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
 // ==================== 生长曲线 Tab ====================
 
-class GrowthCurveTab extends StatefulWidget {
-  const GrowthCurveTab({super.key});
+class GrowthCurveTab extends ConsumerStatefulWidget {
+  final Baby baby;
+
+  const GrowthCurveTab({super.key, required this.baby});
 
   @override
-  State<GrowthCurveTab> createState() => _GrowthCurveTabState();
+  ConsumerState<GrowthCurveTab> createState() => _GrowthCurveTabState();
 }
 
-class _GrowthCurveTabState extends State<GrowthCurveTab> {
+class _GrowthCurveTabState extends ConsumerState<GrowthCurveTab> {
   GrowthMetric _selectedMetric = GrowthMetric.weight;
-
-  final List<Map<String, dynamic>> _growthRecords = [
-    {'date': DateTime(2024, 6, 1), 'weight': 3.2, 'height': 49.5, 'head': 34.0},
-    {'date': DateTime(2024, 7, 1), 'weight': 4.5, 'height': 54.0, 'head': 36.5},
-    {'date': DateTime(2024, 8, 1), 'weight': 5.8, 'height': 59.0, 'head': 39.0},
-    {'date': DateTime(2024, 9, 1), 'weight': 7.0, 'height': 63.5, 'head': 41.0},
-    {'date': DateTime(2024, 10, 1), 'weight': 7.8, 'height': 67.0, 'head': 42.5},
-    {'date': DateTime(2024, 11, 1), 'weight': 8.5, 'height': 70.0, 'head': 43.5},
-    {'date': DateTime(2024, 12, 1), 'weight': 9.0, 'height': 72.5, 'head': 44.2},
-  ];
+  late Future<List<GrowthRecord>> _recordsFuture;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = AppTheme.of(context);
-    final latest = _growthRecords.last;
+  void initState() {
+    super.initState();
+    _recordsFuture = _loadRecords();
+  }
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(theme.spacingMd),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLatestDataCard(latest, theme),
-          SizedBox(height: theme.spacingLg),
-          _buildMetricSelector(theme),
-          SizedBox(height: theme.spacingMd),
-          _buildGrowthChart(theme),
-          SizedBox(height: theme.spacingLg),
-          _buildEvaluationCard(theme),
-          SizedBox(height: theme.spacingLg),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text('记录新数据'),
+  Future<List<GrowthRecord>> _loadRecords() {
+    final growthService = ref.read(growthServiceProvider);
+    return growthService.getGrowthRecords(widget.baby.id);
+  }
+
+  void _refresh() {
+    setState(() {
+      _recordsFuture = _loadRecords();
+    });
+  }
+
+  void _showAddRecordDialog() {
+    final weightCtrl = TextEditingController();
+    final heightCtrl = TextEditingController();
+    final headCtrl = TextEditingController();
+    final theme = AppTheme.of(context);
+    final inputType =
+        const TextInputType(numberWithOptions(decimal: true));
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('记录新数据'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: weightCtrl,
+              keyboardType: inputType,
+              decoration: const InputDecoration(
+                labelText: '体重 (kg)',
+                border: OutlineInputBorder(),
+              ),
             ),
+            SizedBox(height: theme.spacingMd),
+            TextField(
+              controller: heightCtrl,
+              keyboardType: inputType,
+              decoration: const InputDecoration(
+                labelText: '身高 (cm)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            SizedBox(height: theme.spacingMd),
+            TextField(
+              controller: headCtrl,
+              keyboardType: inputType,
+              decoration: const InputDecoration(
+                labelText: '头围 (cm)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('取消'),
           ),
-          SizedBox(height: theme.spacingXl),
+          FilledButton(
+            onPressed: () async {
+              final w = double.tryParse(weightCtrl.text.trim());
+              final h = double.tryParse(heightCtrl.text.trim());
+              final hc = double.tryParse(headCtrl.text.trim());
+              if (w == null && h == null && hc == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('请至少输入一项数据')),
+                );
+                return;
+              }
+              final repo = ref.read(growthRepositoryProvider);
+              await repo.addGrowth(
+                babyId: widget.baby.id,
+                weight: w,
+                height: h,
+                headCircumference: hc,
+                recordDate: DateTime.now(),
+              );
+              if (!mounted) return;
+              Navigator.of(ctx).pop();
+              _refresh();
+            },
+            child: const Text('保存'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildLatestDataCard(Map<String, dynamic> latest, AppTheme theme) {
-    final weight = latest['weight'] as double;
-    final height = latest['height'] as double;
-    final head = latest['head'] as double;
-    final bmi = weight / ((height / 100) * (height / 100));
+  @override
+  Widget build(BuildContext context) {
+    final theme = AppTheme.of(context);
+
+    return FutureBuilder<List<GrowthRecord>>(
+      future: _recordsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingWidget(message: '加载生长数据...');
+        }
+        if (snapshot.hasError) {
+          return EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: '加载失败',
+            subtitle: '${snapshot.error}',
+          );
+        }
+        final records = snapshot.data ?? [];
+        if (records.isEmpty) {
+          return EmptyStateWidget(
+            icon: Icons.show_chart,
+            title: '还没有生长记录',
+            subtitle: '点击下方按钮记录宝宝的第一条生长数据',
+            actionLabel: '记录新数据',
+            onAction: _showAddRecordDialog,
+          );
+        }
+
+        final latest = records.first;
+        final chartRecords = records.reversed.toList();
+        final ageResult = DateTimeUtils.calculateAge(
+          widget.baby.birthDate,
+          now: latest.recordDate,
+        );
+        final ageMonths = ageResult.years * 12 + ageResult.months;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(theme.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildLatestDataCard(latest, theme),
+              SizedBox(height: theme.spacingLg),
+              _buildMetricSelector(theme),
+              SizedBox(height: theme.spacingMd),
+              _buildGrowthChart(chartRecords, theme),
+              SizedBox(height: theme.spacingLg),
+              _buildEvaluationCard(latest, ageMonths, theme),
+              SizedBox(height: theme.spacingLg),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _showAddRecordDialog,
+                  icon: const Icon(Icons.add, size: 20),
+                  label: const Text('记录新数据'),
+                ),
+              ),
+              SizedBox(height: theme.spacingXl),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLatestDataCard(GrowthRecord latest, AppTheme theme) {
+    final weight = latest.weight;
+    final height = latest.height;
+    final head = latest.headCircumference;
+    final bmi = (weight != null && height != null && height > 0)
+        ? weight / ((height / 100) * (height / 100))
+        : null;
 
     return Container(
       width: double.infinity,
@@ -162,7 +321,7 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
               ),
               const Spacer(),
               Text(
-                DateTimeUtils.formatDateCn(latest['date'] as DateTime),
+                DateTimeUtils.formatDateCn(latest.recordDate),
                 style: TextStyle(fontSize: 13, color: theme.textTertiary),
               ),
             ],
@@ -170,17 +329,37 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
           SizedBox(height: theme.spacingLg),
           Row(
             children: [
-              _buildMetricItem('📏', '身高', '${height.toStringAsFixed(1)} cm', theme),
+              _buildMetricItem(
+                '📏',
+                '身高',
+                height != null ? '${height.toStringAsFixed(1)} cm' : '--',
+                theme,
+              ),
               Container(width: 1, height: 50, color: theme.stageSurface),
-              _buildMetricItem('⚖️', '体重', '${weight.toStringAsFixed(1)} kg', theme),
+              _buildMetricItem(
+                '⚖️',
+                '体重',
+                weight != null ? '${weight.toStringAsFixed(1)} kg' : '--',
+                theme,
+              ),
             ],
           ),
           SizedBox(height: theme.spacingMd),
           Row(
             children: [
-              _buildMetricItem('🌀', '头围', '${head.toStringAsFixed(1)} cm', theme),
+              _buildMetricItem(
+                '🌀',
+                '头围',
+                head != null ? '${head.toStringAsFixed(1)} cm' : '--',
+                theme,
+              ),
               Container(width: 1, height: 50, color: theme.stageSurface),
-              _buildMetricItem('📊', 'BMI', bmi.toStringAsFixed(1), theme),
+              _buildMetricItem(
+                '📊',
+                'BMI',
+                bmi != null ? bmi.toStringAsFixed(1) : '--',
+                theme,
+              ),
             ],
           ),
         ],
@@ -188,7 +367,8 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
     );
   }
 
-  Widget _buildMetricItem(String icon, String label, String value, AppTheme theme) {
+  Widget _buildMetricItem(
+      String icon, String label, String value, AppTheme theme) {
     return Expanded(
       child: Column(
         children: [
@@ -261,7 +441,8 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: isSelected ? theme.textPrimary : theme.textSecondary,
+                        color:
+                            isSelected ? theme.textPrimary : theme.textSecondary,
                       ),
                     ),
                   ],
@@ -274,7 +455,17 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
     );
   }
 
-  Widget _buildGrowthChart(AppTheme theme) {
+  Widget _buildGrowthChart(
+      List<GrowthRecord> chartRecords, AppTheme theme) {
+    final recordsMaps = chartRecords
+        .map((r) => <String, dynamic>{
+              'date': r.recordDate,
+              'weight': r.weight ?? 0.0,
+              'height': r.height ?? 0.0,
+              'head': r.headCircumference ?? 0.0,
+            })
+        .toList();
+
     return Container(
       width: double.infinity,
       height: 280,
@@ -306,17 +497,27 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
           ),
           SizedBox(height: theme.spacingMd),
           Expanded(
-            child: CustomPaint(
-              size: const Size(double.infinity, double.infinity),
-              painter: GrowthChartPainter(
-                accentColor: theme.stageAccent,
-                gridColor: theme.stageSurface,
-                textColor: theme.textTertiary,
-                babyColor: theme.success,
-                records: _growthRecords,
-                metric: _selectedMetric,
-              ),
-            ),
+            child: recordsMaps.length >= 2
+                ? CustomPaint(
+                    size: const Size(double.infinity, double.infinity),
+                    painter: GrowthChartPainter(
+                      accentColor: theme.stageAccent,
+                      gridColor: theme.stageSurface,
+                      textColor: theme.textTertiary,
+                      babyColor: theme.success,
+                      records: recordsMaps,
+                      metric: _selectedMetric,
+                    ),
+                  )
+                : Center(
+                    child: Text(
+                      '至少需要 2 条记录才能绘制曲线',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: theme.textTertiary,
+                      ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -347,14 +548,70 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
     );
   }
 
-  Widget _buildEvaluationCard(AppTheme theme) {
+  Color _evalColor(String level, AppTheme theme) {
+    switch (level) {
+      case 'normal':
+      case 'mildLow':
+      case 'mildHigh':
+        return theme.success;
+      case 'moderateLow':
+      case 'moderateHigh':
+        return theme.warning;
+      case 'severeLow':
+      case 'severeHigh':
+        return theme.danger;
+      default:
+        return theme.success;
+    }
+  }
+
+  IconData _evalIcon(String level) {
+    switch (level) {
+      case 'normal':
+      case 'mildLow':
+      case 'mildHigh':
+        return Icons.favorite;
+      case 'severeLow':
+      case 'severeHigh':
+        return Icons.error_outline;
+      default:
+        return Icons.warning_amber_rounded;
+    }
+  }
+
+  Widget _buildEvaluationCard(
+      GrowthRecord latest, int ageMonths, AppTheme theme) {
+    final growthService = ref.read(growthServiceProvider);
+
+    double value;
+    switch (_selectedMetric) {
+      case GrowthMetric.weight:
+        value = latest.weight ?? 0;
+        break;
+      case GrowthMetric.height:
+        value = latest.height ?? 0;
+        break;
+      case GrowthMetric.headCircumference:
+        value = latest.headCircumference ?? 0;
+        break;
+      case GrowthMetric.bmi:
+        final w = latest.weight ?? 0;
+        final h = latest.height ?? 0;
+        value = (h > 0) ? w / ((h / 100) * (h / 100)) : 0;
+        break;
+    }
+
+    final evaluation =
+        growthService.evaluateGrowth(value, ageMonths, _selectedMetric);
+    final color = _evalColor(evaluation.level, theme);
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(theme.spacingLg),
       decoration: BoxDecoration(
-        color: theme.success.withOpacity(0.08),
+        color: color.withOpacity(0.08),
         borderRadius: BorderRadius.circular(theme.radiusLg),
-        border: Border.all(color: theme.success.withOpacity(0.3), width: 1),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
       child: Row(
         children: [
@@ -362,10 +619,10 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: theme.success.withOpacity(0.2),
+              color: color.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.favorite, color: Colors.green, size: 24),
+            child: Icon(_evalIcon(evaluation.level), color: color, size: 24),
           ),
           SizedBox(width: theme.spacingMd),
           Expanded(
@@ -374,7 +631,7 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  '发育正常 · P50-P75 区间',
+                  '${evaluation.description} · P${evaluation.percentile.round()}',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -383,8 +640,9 @@ class _GrowthCurveTabState extends State<GrowthCurveTab> {
                 ),
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  '宝宝生长发育良好，继续保持均衡营养和规律作息',
-                  style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                  evaluation.suggestion,
+                  style:
+                      TextStyle(fontSize: 13, color: theme.textSecondary),
                 ),
               ],
             ),
@@ -414,7 +672,9 @@ class GrowthChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = gridColor..strokeWidth = 1;
+    final paint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1;
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
     );
@@ -431,7 +691,8 @@ class GrowthChartPainter extends CustomPainter {
         style: TextStyle(fontSize: 10, color: textColor),
       );
       textPainter.layout();
-      textPainter.paint(canvas, Offset(x - textPainter.width / 2, size.height - 2));
+      textPainter.paint(
+          canvas, Offset(x - textPainter.width / 2, size.height - 2));
     }
 
     final p50Paint = Paint()
@@ -447,9 +708,21 @@ class GrowthChartPainter extends CustomPainter {
       final x = 40 + (size.width - 50) * i / 6;
       final age = 6 + i;
       final standards = _getStandardValues(age);
-      final p3Y = size.height - 20 - (standards['p3']! - _minValue) / (_maxValue - _minValue) * (size.height - 30);
-      final p50Y = size.height - 20 - (standards['p50']! - _minValue) / (_maxValue - _minValue) * (size.height - 30);
-      final p97Y = size.height - 20 - (standards['p97']! - _minValue) / (_maxValue - _minValue) * (size.height - 30);
+      final p3Y = size.height -
+          20 -
+          (standards['p3']! - _minValue) /
+              (_maxValue - _minValue) *
+              (size.height - 30);
+      final p50Y = size.height -
+          20 -
+          (standards['p50']! - _minValue) /
+              (_maxValue - _minValue) *
+              (size.height - 30);
+      final p97Y = size.height -
+          20 -
+          (standards['p97']! - _minValue) /
+              (_maxValue - _minValue) *
+              (size.height - 30);
 
       if (i == 0) {
         p3Path.moveTo(x, p3Y);
@@ -485,7 +758,9 @@ class GrowthChartPainter extends CustomPainter {
     for (int i = 0; i < records.length; i++) {
       final x = 40 + (size.width - 50) * i / (records.length - 1);
       final value = _getMetricValue(records[i]);
-      final y = size.height - 20 - (value - _minValue) / (_maxValue - _minValue) * (size.height - 30);
+      final y = size.height -
+          20 -
+          (value - _minValue) / (_maxValue - _minValue) * (size.height - 30);
 
       if (i == 0) {
         babyPath.moveTo(x, y);
@@ -502,7 +777,9 @@ class GrowthChartPainter extends CustomPainter {
     for (int i = 0; i < records.length; i++) {
       final x = 40 + (size.width - 50) * i / (records.length - 1);
       final value = _getMetricValue(records[i]);
-      final y = size.height - 20 - (value - _minValue) / (_maxValue - _minValue) * (size.height - 30);
+      final y = size.height -
+          20 -
+          (value - _minValue) / (_maxValue - _minValue) * (size.height - 30);
       canvas.drawCircle(Offset(x, y), 4, dotPaint);
       canvas.drawCircle(Offset(x, y), 2, Paint()..color = Colors.white);
     }
@@ -567,78 +844,134 @@ class GrowthChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant GrowthChartPainter oldDelegate) {
-    return oldDelegate.metric != metric;
+    return oldDelegate.metric != metric ||
+        oldDelegate.records != records;
   }
 }
 
 // ==================== 疫苗 Tab ====================
 
-class VaccineTab extends StatefulWidget {
-  const VaccineTab({super.key});
+class _VaccineTabData {
+  final int completedCount;
+  final int totalCount;
+  final VaccineRecord? nextVaccine;
+  final List<VaccineRecord> pending;
+  final List<VaccineRecord> completed;
 
-  @override
-  State<VaccineTab> createState() => _VaccineTabState();
+  const _VaccineTabData({
+    required this.completedCount,
+    required this.totalCount,
+    required this.nextVaccine,
+    required this.pending,
+    required this.completed,
+  });
 }
 
-class _VaccineTabState extends State<VaccineTab> {
+class VaccineTab extends ConsumerStatefulWidget {
+  final Baby baby;
+
+  const VaccineTab({super.key, required this.baby});
+
+  @override
+  ConsumerState<VaccineTab> createState() => _VaccineTabState();
+}
+
+class _VaccineTabState extends ConsumerState<VaccineTab> {
   int _selectedSegment = 0;
+  late Future<_VaccineTabData> _dataFuture;
 
-  final List<Map<String, dynamic>> _upcomingVaccines = [
-    {'name': '百白破疫苗', 'dose': '第3剂', 'scheduledDate': DateTime.now().add(const Duration(days: 5)), 'disease': '百日咳白喉破伤风', 'category': '国家免疫'},
-    {'name': 'A群流脑多糖疫苗', 'dose': '第1剂', 'scheduledDate': DateTime.now().add(const Duration(days: 20)), 'disease': 'A群流脑', 'category': '国家免疫'},
-    {'name': '乙肝疫苗', 'dose': '第3剂', 'scheduledDate': DateTime.now().add(const Duration(days: 35)), 'disease': '乙型肝炎', 'category': '国家免疫'},
-    {'name': '麻腮风疫苗', 'dose': '第1剂', 'scheduledDate': DateTime.now().add(const Duration(days: 60)), 'disease': '麻疹腮腺炎风疹', 'category': '国家免疫'},
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _dataFuture = _loadData();
+  }
 
-  final List<Map<String, dynamic>> _completedVaccines = [
-    {'name': '乙肝疫苗', 'dose': '第1剂', 'completedDate': DateTime.now().subtract(const Duration(days: 150)), 'disease': '乙型肝炎', 'category': '国家免疫'},
-    {'name': '卡介苗', 'dose': '第1剂', 'completedDate': DateTime.now().subtract(const Duration(days: 148)), 'disease': '结核病', 'category': '国家免疫'},
-    {'name': '乙肝疫苗', 'dose': '第2剂', 'completedDate': DateTime.now().subtract(const Duration(days: 120)), 'disease': '乙型肝炎', 'category': '国家免疫'},
-    {'name': '脊灰灭活疫苗', 'dose': '第1剂', 'completedDate': DateTime.now().subtract(const Duration(days: 90)), 'disease': '脊髓灰质炎', 'category': '国家免疫'},
-    {'name': '脊灰灭活疫苗', 'dose': '第2剂', 'completedDate': DateTime.now().subtract(const Duration(days: 60)), 'disease': '脊髓灰质炎', 'category': '国家免疫'},
-    {'name': '百白破疫苗', 'dose': '第1剂', 'completedDate': DateTime.now().subtract(const Duration(days: 60)), 'disease': '百日咳白喉破伤风', 'category': '国家免疫'},
-    {'name': '脊灰减毒活疫苗', 'dose': '第3剂', 'completedDate': DateTime.now().subtract(const Duration(days: 30)), 'disease': '脊髓灰质炎', 'category': '国家免疫'},
-    {'name': '百白破疫苗', 'dose': '第2剂', 'completedDate': DateTime.now().subtract(const Duration(days: 30)), 'disease': '百日咳白喉破伤风', 'category': '国家免疫'},
-  ];
+  Future<_VaccineTabData> _loadData() async {
+    final vaccineService = ref.read(vaccineServiceProvider);
+    final vaccineRepo = ref.read(vaccineRepositoryProvider);
+    final babyId = widget.baby.id;
+
+    final results = await Future.wait([
+      vaccineService.getCompletedCount(babyId),
+      vaccineService.getTotalCount(babyId),
+      vaccineService.getNextVaccine(babyId),
+      vaccineRepo.getPendingVaccines(babyId),
+      vaccineService.getCompletedVaccines(babyId),
+    ]);
+
+    return _VaccineTabData(
+      completedCount: results[0] as int,
+      totalCount: results[1] as int,
+      nextVaccine: results[2] as VaccineRecord?,
+      pending: results[3] as List<VaccineRecord>,
+      completed: results[4] as List<VaccineRecord>,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final total = _upcomingVaccines.length + _completedVaccines.length;
-    final nextVaccine = _upcomingVaccines.first;
-    final daysUntil = nextVaccine['scheduledDate'].difference(DateTime.now()).inDays;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(theme.spacingMd),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProgressCard(_completedVaccines.length, total, theme),
-          SizedBox(height: theme.spacingLg),
-          _buildNextVaccineCard(nextVaccine, daysUntil, theme),
-          SizedBox(height: theme.spacingLg),
-          _buildSegmentControl(theme),
-          SizedBox(height: theme.spacingMd),
-          if (_selectedSegment == 0)
-            _buildUpcomingList(theme)
-          else if (_selectedSegment == 1)
-            _buildCompletedList(theme)
-          else
-            Column(
-              children: [
-                _buildUpcomingList(theme),
-                SizedBox(height: theme.spacingLg),
-                _buildCompletedList(theme),
-              ],
-            ),
-          SizedBox(height: theme.spacingXl),
-        ],
-      ),
+    return FutureBuilder<_VaccineTabData>(
+      future: _dataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingWidget(message: '加载疫苗数据...');
+        }
+        if (snapshot.hasError) {
+          return EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: '加载失败',
+            subtitle: '${snapshot.error}',
+          );
+        }
+        final data = snapshot.data!;
+        final total = data.totalCount;
+
+        if (total == 0) {
+          return EmptyStateWidget(
+            icon: Icons.vaccines_outlined,
+            title: '暂无疫苗数据',
+            subtitle: '宝宝出生后会自动生成疫苗接种计划',
+          );
+        }
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(theme.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProgressCard(data.completedCount, total, theme),
+              SizedBox(height: theme.spacingLg),
+              if (data.nextVaccine != null)
+                _buildNextVaccineCard(data.nextVaccine!, theme)
+              else
+                _buildNoNextVaccineCard(theme),
+              SizedBox(height: theme.spacingLg),
+              _buildSegmentControl(theme),
+              SizedBox(height: theme.spacingMd),
+              if (_selectedSegment == 0)
+                _buildPendingList(data.pending, theme)
+              else if (_selectedSegment == 1)
+                _buildCompletedList(data.completed, theme)
+              else
+                Column(
+                  children: [
+                    _buildPendingList(data.pending, theme),
+                    SizedBox(height: theme.spacingLg),
+                    _buildCompletedList(data.completed, theme),
+                  ],
+                ),
+              SizedBox(height: theme.spacingXl),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildProgressCard(int completed, int total, AppTheme theme) {
-    final progress = completed / total;
+    final progress = total > 0 ? completed / total : 0.0;
 
     return Container(
       width: double.infinity,
@@ -714,7 +1047,12 @@ class _VaccineTabState extends State<VaccineTab> {
     );
   }
 
-  Widget _buildNextVaccineCard(Map<String, dynamic> vaccine, int days, AppTheme theme) {
+  Widget _buildNextVaccineCard(VaccineRecord vaccine, AppTheme theme) {
+    final scheduled = vaccine.scheduledDate;
+    final days = scheduled != null
+        ? scheduled.difference(DateTime.now()).inDays
+        : 0;
+
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(theme.spacingLg),
@@ -771,15 +1109,16 @@ class _VaccineTabState extends State<VaccineTab> {
                   borderRadius: BorderRadius.circular(theme.radiusSm),
                 ),
                 child: Text(
-                  vaccine['category'],
-                  style: TextStyle(fontSize: 11, color: theme.stageAccentDark),
+                  '国家免疫',
+                  style:
+                      TextStyle(fontSize: 11, color: theme.stageAccentDark),
                 ),
               ),
             ],
           ),
           SizedBox(height: theme.spacingMd),
           Text(
-            vaccine['name'],
+            vaccine.vaccineName,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.w700,
@@ -788,16 +1127,19 @@ class _VaccineTabState extends State<VaccineTab> {
           ),
           SizedBox(height: theme.spacingXs),
           Text(
-            '${vaccine['dose']} · ${vaccine['disease']}',
+            '第${vaccine.doseNumber}剂 · ${vaccine.note ?? ''}',
             style: TextStyle(fontSize: 14, color: theme.textSecondary),
           ),
           SizedBox(height: theme.spacingLg),
           Row(
             children: [
-              Icon(Icons.calendar_today, size: 16, color: theme.textTertiary),
+              Icon(Icons.calendar_today,
+                  size: 16, color: theme.textTertiary),
               SizedBox(width: theme.spacingXs),
               Text(
-                DateTimeUtils.formatDateCn(vaccine['scheduledDate']),
+                scheduled != null
+                    ? DateTimeUtils.formatDateCn(scheduled)
+                    : '待定',
                 style: TextStyle(fontSize: 14, color: theme.textSecondary),
               ),
               const Spacer(),
@@ -813,7 +1155,9 @@ class _VaccineTabState extends State<VaccineTab> {
                   borderRadius: BorderRadius.circular(theme.radiusMd),
                 ),
                 child: Text(
-                  days <= 0 ? '今天接种' : '还有 $days 天',
+                  scheduled == null
+                      ? '待定'
+                      : (days <= 0 ? '今天接种' : '还有 $days 天'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -822,6 +1166,53 @@ class _VaccineTabState extends State<VaccineTab> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoNextVaccineCard(AppTheme theme) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacingLg),
+      decoration: BoxDecoration(
+        color: theme.paper,
+        borderRadius: BorderRadius.circular(theme.radiusLg),
+        border: Border.all(color: theme.stageSurface, width: 1),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: theme.success.withOpacity(0.15),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.check_circle, color: Colors.green),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '暂无待接种疫苗',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: theme.textPrimary,
+                  ),
+                ),
+                SizedBox(height: theme.spacingXs),
+                Text(
+                  '已按时完成当前阶段的疫苗接种',
+                  style: TextStyle(fontSize: 13, color: theme.textSecondary),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -851,7 +1242,8 @@ class _VaccineTabState extends State<VaccineTab> {
                 padding: EdgeInsets.symmetric(vertical: theme.spacingSm),
                 decoration: BoxDecoration(
                   color: isSelected ? theme.paper : Colors.transparent,
-                  borderRadius: BorderRadius.circular(theme.radiusSm - 2),
+                  borderRadius:
+                      BorderRadius.circular(theme.radiusSm - 2),
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
@@ -868,7 +1260,8 @@ class _VaccineTabState extends State<VaccineTab> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
-                      color: isSelected ? theme.textPrimary : theme.textSecondary,
+                      color:
+                          isSelected ? theme.textPrimary : theme.textSecondary,
                     ),
                   ),
                 ),
@@ -880,14 +1273,15 @@ class _VaccineTabState extends State<VaccineTab> {
     );
   }
 
-  Widget _buildUpcomingList(AppTheme theme) {
+  Widget _buildPendingList(
+      List<VaccineRecord> pending, AppTheme theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: theme.spacingXs),
           child: Text(
-            '待接种 (${_upcomingVaccines.length})',
+            '待接种 (${pending.length})',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -896,28 +1290,29 @@ class _VaccineTabState extends State<VaccineTab> {
           ),
         ),
         SizedBox(height: theme.spacingSm),
-        ...List.generate(_upcomingVaccines.length, (index) {
-          final vaccine = _upcomingVaccines[index];
-          final days = vaccine['scheduledDate'].difference(DateTime.now()).inDays;
-          return _buildVaccineItem(
-            vaccine: vaccine,
-            isCompleted: false,
-            daysUntil: days,
-            theme: theme,
-          );
-        }),
+        if (pending.isEmpty)
+          _buildEmptyListHint('暂无待接种疫苗', theme)
+        else
+          ...List.generate(pending.length, (index) {
+            return _buildVaccineItem(
+              vaccine: pending[index],
+              isCompleted: false,
+              theme: theme,
+            );
+          }),
       ],
     );
   }
 
-  Widget _buildCompletedList(AppTheme theme) {
+  Widget _buildCompletedList(
+      List<VaccineRecord> completed, AppTheme theme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
           padding: EdgeInsets.symmetric(horizontal: theme.spacingXs),
           child: Text(
-            '已接种 (${_completedVaccines.length})',
+            '已接种 (${completed.length})',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -926,26 +1321,42 @@ class _VaccineTabState extends State<VaccineTab> {
           ),
         ),
         SizedBox(height: theme.spacingSm),
-        ...List.generate(_completedVaccines.length, (index) {
-          final vaccine = _completedVaccines[index];
-          return _buildVaccineItem(
-            vaccine: vaccine,
-            isCompleted: true,
-            daysUntil: 0,
-            theme: theme,
-          );
-        }),
+        if (completed.isEmpty)
+          _buildEmptyListHint('暂无已接种疫苗', theme)
+        else
+          ...List.generate(completed.length, (index) {
+            return _buildVaccineItem(
+              vaccine: completed[index],
+              isCompleted: true,
+              theme: theme,
+            );
+          }),
       ],
+    );
+  }
+
+  Widget _buildEmptyListHint(String text, AppTheme theme) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(theme.spacingLg),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 13, color: theme.textTertiary),
+      ),
     );
   }
 
   Widget _buildVaccineItem({
-    required Map<String, dynamic> vaccine,
+    required VaccineRecord vaccine,
     required bool isCompleted,
-    required int daysUntil,
     required AppTheme theme,
   }) {
-    final date = isCompleted ? vaccine['completedDate'] : vaccine['scheduledDate'];
+    final date =
+        isCompleted ? vaccine.vaccinationDate : vaccine.scheduledDate;
+    final daysUntil = (!isCompleted && vaccine.scheduledDate != null)
+        ? vaccine.scheduledDate!.difference(DateTime.now()).inDays
+        : 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: theme.spacingSm),
@@ -954,7 +1365,7 @@ class _VaccineTabState extends State<VaccineTab> {
         color: isCompleted ? theme.stageSurface.withOpacity(0.5) : theme.paper,
         borderRadius: BorderRadius.circular(theme.radiusMd),
         border: Border.all(
-          color: isCompleted ? theme.stageSurface : theme.stageSurface,
+          color: theme.stageSurface,
           width: 1,
         ),
       ),
@@ -983,20 +1394,24 @@ class _VaccineTabState extends State<VaccineTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  vaccine['name'],
+                  vaccine.vaccineName,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: isCompleted ? theme.textSecondary : theme.textPrimary,
-                    decoration: isCompleted ? TextDecoration.lineThrough : null,
+                    color:
+                        isCompleted ? theme.textSecondary : theme.textPrimary,
+                    decoration:
+                        isCompleted ? TextDecoration.lineThrough : null,
                   ),
                 ),
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  '${vaccine['dose']} · ${vaccine['disease']}',
+                  '第${vaccine.doseNumber}剂 · ${vaccine.note ?? ''}',
                   style: TextStyle(
                     fontSize: 13,
-                    color: isCompleted ? theme.textTertiary : theme.textSecondary,
+                    color: isCompleted
+                        ? theme.textTertiary
+                        : theme.textSecondary,
                   ),
                 ),
               ],
@@ -1007,16 +1422,18 @@ class _VaccineTabState extends State<VaccineTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                DateTimeUtils.formatDateCn(date),
+                date != null ? DateTimeUtils.formatDateCn(date) : '待定',
                 style: TextStyle(
                   fontSize: 12,
-                  color: isCompleted ? theme.textTertiary : theme.textSecondary,
+                  color: isCompleted
+                      ? theme.textTertiary
+                      : theme.textSecondary,
                 ),
               ),
               if (!isCompleted) ...[
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  daysUntil <= 0 ? '今天' : '$daysUntil天后',
+                  daysUntil <= 0 ? '已到期' : '$daysUntil天后',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1045,17 +1462,31 @@ class _VaccineTabState extends State<VaccineTab> {
 
 // ==================== 里程碑 Tab ====================
 
-class MilestoneTab extends StatefulWidget {
-  const MilestoneTab({super.key});
+class _MilestoneTabData {
+  final Map<int, List<MilestoneRecord>> byCategory;
+  final double progress;
+  final int ageMonths;
 
-  @override
-  State<MilestoneTab> createState() => _MilestoneTabState();
+  const _MilestoneTabData({
+    required this.byCategory,
+    required this.progress,
+    required this.ageMonths,
+  });
 }
 
-class _MilestoneTabState extends State<MilestoneTab> {
+class MilestoneTab extends ConsumerStatefulWidget {
+  final Baby baby;
+
+  const MilestoneTab({super.key, required this.baby});
+
+  @override
+  ConsumerState<MilestoneTab> createState() => _MilestoneTabState();
+}
+
+class _MilestoneTabState extends ConsumerState<MilestoneTab> {
   int _selectedCategory = 0;
 
-  final List<Map<String, dynamic>> _categories = [
+  static const List<Map<String, dynamic>> _categories = [
     {'name': '大运动', 'icon': '🏃', 'index': 0},
     {'name': '语言', 'icon': '🗣️', 'index': 1},
     {'name': '认知', 'icon': '🧠', 'index': 2},
@@ -1063,109 +1494,172 @@ class _MilestoneTabState extends State<MilestoneTab> {
     {'name': '喂养', 'icon': '🍼', 'index': 4},
   ];
 
-  final List<Map<String, dynamic>> _allMilestones = [
-    {'name': '抬头45°', 'category': 0, 'expectedMonths': 2, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 30)), 'description': '俯卧时能抬头45度，头部能短暂保持稳定'},
-    {'name': '抬头90°/俯卧抬胸', 'category': 0, 'expectedMonths': 3, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 15)), 'description': '俯卧时能抬头90度，胸部可离开床面'},
-    {'name': '翻身（俯→仰）', 'category': 0, 'expectedMonths': 4, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 5)), 'description': '能从俯卧位翻身为仰卧位'},
-    {'name': '独立坐', 'category': 0, 'expectedMonths': 6, 'achieved': false, 'description': '不需要支撑能独立坐立片刻'},
-    {'name': '翻身（仰→俯）', 'category': 0, 'expectedMonths': 6, 'achieved': false, 'description': '能从仰卧位翻身为俯卧位'},
-    {'name': '独坐稳', 'category': 0, 'expectedMonths': 8, 'achieved': false, 'description': '能独立坐稳，身体前倾时能恢复平衡'},
-    {'name': '会爬', 'category': 0, 'expectedMonths': 8, 'achieved': false, 'description': '能用手和膝盖支撑身体爬行'},
-    {'name': '会微笑', 'category': 1, 'expectedMonths': 1, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 40)), 'description': '对人或声音能发出微笑'},
-    {'name': '发出元音', 'category': 1, 'expectedMonths': 2, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 25)), 'description': '能发出a、o、e等元音'},
-    {'name': '笑出声', 'category': 1, 'expectedMonths': 3, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 10)), 'description': '被逗引时能笑出声音'},
-    {'name': '咿呀发声', 'category': 1, 'expectedMonths': 3, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 8)), 'description': '能咿咿呀呀发出连续的声音'},
-    {'name': '叫名字有反应', 'category': 1, 'expectedMonths': 6, 'achieved': false, 'description': '听到自己名字会转头或有反应'},
-    {'name': '发辅音', 'category': 1, 'expectedMonths': 6, 'achieved': false, 'description': '能发出b、m、d等辅音'},
-    {'name': '追视红球', 'category': 2, 'expectedMonths': 1, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 42)), 'description': '眼睛能跟随红球左右移动'},
-    {'name': '伸手抓物', 'category': 2, 'expectedMonths': 3, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 12)), 'description': '能主动伸手去抓眼前的物品'},
-    {'name': '吃手', 'category': 2, 'expectedMonths': 3, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 15)), 'description': '能把手放到嘴里吸吮'},
-    {'name': '主动抓物', 'category': 2, 'expectedMonths': 6, 'achieved': false, 'description': '能主动伸手抓住物品并握住'},
-    {'name': '眼神对视', 'category': 3, 'expectedMonths': 1, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 38)), 'description': '能与照顾者有眼神对视'},
-    {'name': '被逗会笑', 'category': 3, 'expectedMonths': 2, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 28)), 'description': '被人逗引时会露出笑容'},
-    {'name': '认生', 'category': 3, 'expectedMonths': 6, 'achieved': false, 'description': '见到陌生人会表现出紧张或哭闹'},
-    {'name': '躲猫猫', 'category': 3, 'expectedMonths': 6, 'achieved': false, 'description': '喜欢玩躲猫猫游戏，会寻找被藏起来的脸'},
-    {'name': '扶瓶', 'category': 4, 'expectedMonths': 4, 'achieved': true, 'achieveDate': DateTime.now().subtract(const Duration(days: 3)), 'description': '能自己扶着奶瓶喝奶'},
-    {'name': '添加辅食', 'category': 4, 'expectedMonths': 6, 'achieved': false, 'description': '开始添加辅食，能接受泥糊状食物'},
-    {'name': '会用勺', 'category': 4, 'expectedMonths': 6, 'achieved': false, 'description': '对勺子感兴趣，会抓握勺子'},
-  ];
+  late Future<_MilestoneTabData> _dataFuture;
 
-  List<Map<String, dynamic>> get _filteredMilestones {
-    return _allMilestones.where((m) => m['category'] == _selectedCategory).toList()
-      ..sort((a, b) {
-        if (a['achieved'] == b['achieved']) {
-          return (a['expectedMonths'] as int).compareTo(b['expectedMonths'] as int);
-        }
-        return a['achieved'] ? -1 : 1;
-      });
+  @override
+  void initState() {
+    super.initState();
+    _dataFuture = _loadData();
   }
 
-  int get _totalAchieved => _allMilestones.where((m) => m['achieved'] == true).length;
-  int get _totalCount => _allMilestones.length;
+  Future<_MilestoneTabData> _loadData() async {
+    final service = ref.read(milestoneServiceProvider);
+    final babyId = widget.baby.id;
+    final age = DateTimeUtils.calculateAge(widget.baby.birthDate);
+    final ageMonths = age.years * 12 + age.months;
+
+    final results = await Future.wait([
+      service.getMilestonesByCategory(babyId, 0),
+      service.getMilestonesByCategory(babyId, 1),
+      service.getMilestonesByCategory(babyId, 2),
+      service.getMilestonesByCategory(babyId, 3),
+      service.getMilestonesByCategory(babyId, 4),
+      service.getMilestoneProgress(babyId, ageMonths),
+    ]);
+
+    return _MilestoneTabData(
+      byCategory: {
+        0: results[0] as List<MilestoneRecord>,
+        1: results[1] as List<MilestoneRecord>,
+        2: results[2] as List<MilestoneRecord>,
+        3: results[3] as List<MilestoneRecord>,
+        4: results[4] as List<MilestoneRecord>,
+      },
+      progress: results[5] as double,
+      ageMonths: ageMonths,
+    );
+  }
+
+  List<MilestoneRecord> _sortedForCategory(
+      Map<int, List<MilestoneRecord>> byCategory, int category) {
+    final list = List<MilestoneRecord>.from(byCategory[category] ?? []);
+    list.sort((a, b) {
+      final aAch = a.achieveDate != null;
+      final bAch = b.achieveDate != null;
+      if (aAch != bAch) return aAch ? -1 : 1;
+      return (a.expectedAgeMonths ?? 0).compareTo(b.expectedAgeMonths ?? 0);
+    });
+    return list;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = AppTheme.of(context);
-    final milestones = _filteredMilestones;
-    final achievedInCategory = milestones.where((m) => m['achieved'] == true).length;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(theme.spacingMd),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildProgressCard(theme),
-          SizedBox(height: theme.spacingLg),
-          _buildCategoryTabs(theme),
-          SizedBox(height: theme.spacingMd),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: theme.spacingXs),
-            child: Row(
-              children: [
-                Text(
-                  '${_categories[_selectedCategory]['name']}',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: theme.textPrimary,
-                  ),
+    return FutureBuilder<_MilestoneTabData>(
+      future: _dataFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingWidget(message: '加载里程碑数据...');
+        }
+        if (snapshot.hasError) {
+          return EmptyStateWidget(
+            icon: Icons.error_outline,
+            title: '加载失败',
+            subtitle: '${snapshot.error}',
+          );
+        }
+        final data = snapshot.data!;
+        final allMilestones = <MilestoneRecord>[];
+        for (int i = 0; i < 5; i++) {
+          allMilestones.addAll(data.byCategory[i] ?? []);
+        }
+
+        if (allMilestones.isEmpty) {
+          return EmptyStateWidget(
+            icon: Icons.emoji_events_outlined,
+            title: '暂无里程碑数据',
+            subtitle: '宝宝出生后会自动生成发育里程碑清单',
+          );
+        }
+
+        final milestones = _sortedForCategory(
+            data.byCategory, _selectedCategory);
+        final achievedInCategory =
+            milestones.where((m) => m.achieveDate != null).length;
+
+        final ageMonths = data.ageMonths;
+        final relevant = allMilestones.where((m) =>
+            m.expectedAgeMonths != null &&
+            m.expectedAgeMonths! <= ageMonths);
+        final achievedRelevant =
+            relevant.where((m) => m.achieveDate != null).length;
+        final relevantTotal = relevant.length;
+
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(theme.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProgressCard(
+                achievedRelevant,
+                relevantTotal,
+                data.progress,
+                theme,
+              ),
+              SizedBox(height: theme.spacingLg),
+              _buildCategoryTabs(data.byCategory, theme),
+              SizedBox(height: theme.spacingMd),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: theme.spacingXs),
+                child: Row(
+                  children: [
+                    Text(
+                      '${_categories[_selectedCategory]['name']}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: theme.textPrimary,
+                      ),
+                    ),
+                    SizedBox(width: theme.spacingXs),
+                    Text(
+                      '($achievedInCategory/${milestones.length})',
+                      style: TextStyle(
+                          fontSize: 14, color: theme.textSecondary),
+                    ),
+                  ],
                 ),
-                SizedBox(width: theme.spacingXs),
-                Text(
-                  '($achievedInCategory/${milestones.length})',
-                  style: TextStyle(fontSize: 14, color: theme.textSecondary),
+              ),
+              SizedBox(height: theme.spacingSm),
+              ...List.generate(milestones.length, (index) {
+                return _buildMilestoneItem(milestones[index], theme);
+              }),
+              SizedBox(height: theme.spacingLg),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.medical_services_outlined,
+                      size: 20),
+                  label: const Text('发育检查'),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(height: theme.spacingXl),
+            ],
           ),
-          SizedBox(height: theme.spacingSm),
-          ...List.generate(milestones.length, (index) {
-            return _buildMilestoneItem(milestones[index], theme);
-          }),
-          SizedBox(height: theme.spacingLg),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.medical_services_outlined, size: 20),
-              label: const Text('发育检查'),
-            ),
-          ),
-          SizedBox(height: theme.spacingXl),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildProgressCard(AppTheme theme) {
-    final progress = _totalAchieved / _totalCount;
+  Widget _buildProgressCard(
+    int achievedRelevant,
+    int relevantTotal,
+    double progress,
+    AppTheme theme,
+  ) {
+    final progressValue = progress.clamp(0.0, 1.0).toDouble();
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(theme.spacingLg),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [theme.milestoneGold.withOpacity(0.9), theme.milestoneGold],
+          colors: [
+            theme.milestoneGold.withOpacity(0.9),
+            theme.milestoneGold
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1207,7 +1701,9 @@ class _MilestoneTabState extends State<MilestoneTab> {
                 ),
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  '已达成 $_totalAchieved / 共 $_totalCount 项',
+                  relevantTotal == 0
+                      ? '暂无适龄里程碑'
+                      : '已达成 $achievedRelevant / 共 $relevantTotal 项',
                   style: TextStyle(
                     fontSize: 13,
                     color: Colors.white.withOpacity(0.9),
@@ -1217,10 +1713,11 @@ class _MilestoneTabState extends State<MilestoneTab> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(theme.radiusPill),
                   child: LinearProgressIndicator(
-                    value: progress,
+                    value: progressValue,
                     minHeight: 6,
                     backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor:
+                        const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 ),
               ],
@@ -1231,7 +1728,8 @@ class _MilestoneTabState extends State<MilestoneTab> {
     );
   }
 
-  Widget _buildCategoryTabs(AppTheme theme) {
+  Widget _buildCategoryTabs(
+      Map<int, List<MilestoneRecord>> byCategory, AppTheme theme) {
     return SizedBox(
       height: 72,
       child: ListView.separated(
@@ -1240,15 +1738,16 @@ class _MilestoneTabState extends State<MilestoneTab> {
         separatorBuilder: (context, index) => SizedBox(width: theme.spacingSm),
         itemBuilder: (context, index) {
           final category = _categories[index];
-          final isSelected = _selectedCategory == category['index'];
-          final achievedInCat = _allMilestones
-              .where((m) => m['category'] == category['index'] && m['achieved'] == true)
+          final catIndex = category['index'] as int;
+          final isSelected = _selectedCategory == catIndex;
+          final achievedInCat = (byCategory[catIndex] ?? [])
+              .where((m) => m.achieveDate != null)
               .length;
 
           return GestureDetector(
             onTap: () {
               setState(() {
-                _selectedCategory = category['index'] as int;
+                _selectedCategory = catIndex;
               });
             },
             child: Container(
@@ -1258,7 +1757,8 @@ class _MilestoneTabState extends State<MilestoneTab> {
                 color: isSelected ? theme.paper : theme.stageSurface,
                 borderRadius: BorderRadius.circular(theme.radiusMd),
                 border: Border.all(
-                  color: isSelected ? theme.milestoneGold : Colors.transparent,
+                  color:
+                      isSelected ? theme.milestoneGold : Colors.transparent,
                   width: 2,
                 ),
                 boxShadow: isSelected
@@ -1281,7 +1781,9 @@ class _MilestoneTabState extends State<MilestoneTab> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: isSelected ? theme.textPrimary : theme.textSecondary,
+                      color: isSelected
+                          ? theme.textPrimary
+                          : theme.textSecondary,
                     ),
                   ),
                   SizedBox(height: 2),
@@ -1301,9 +1803,9 @@ class _MilestoneTabState extends State<MilestoneTab> {
     );
   }
 
-  Widget _buildMilestoneItem(Map<String, dynamic> milestone, AppTheme theme) {
-    final achieved = milestone['achieved'] as bool;
-    final expectedMonths = milestone['expectedMonths'] as int;
+  Widget _buildMilestoneItem(MilestoneRecord milestone, AppTheme theme) {
+    final achieved = milestone.achieveDate != null;
+    final expectedMonths = milestone.expectedAgeMonths ?? 0;
 
     return Container(
       margin: EdgeInsets.only(bottom: theme.spacingSm),
@@ -1343,16 +1845,17 @@ class _MilestoneTabState extends State<MilestoneTab> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  milestone['name'],
+                  milestone.name,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: achieved ? theme.textPrimary : theme.textSecondary,
+                    color:
+                        achieved ? theme.textPrimary : theme.textSecondary,
                   ),
                 ),
                 SizedBox(height: theme.spacingXs),
                 Text(
-                  milestone['description'],
+                  milestone.description ?? '',
                   style: TextStyle(
                     fontSize: 12,
                     color: theme.textTertiary,
@@ -1379,7 +1882,7 @@ class _MilestoneTabState extends State<MilestoneTab> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  DateTimeUtils.formatDateCn(milestone['achieveDate']),
+                  DateTimeUtils.formatDateCn(milestone.achieveDate!),
                   style: TextStyle(
                     fontSize: 11,
                     color: theme.textTertiary,
@@ -1387,7 +1890,7 @@ class _MilestoneTabState extends State<MilestoneTab> {
                 ),
               ] else ...[
                 Text(
-                  '${expectedMonths}月龄',
+                  '$expectedMonths月龄',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
