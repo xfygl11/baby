@@ -13,23 +13,23 @@ class ExpenseRepository {
   Future<ExpenseRecord> insert(ExpenseRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.expenseRecords).insert(companion);
-    return _db.expenseRecords.get(insertedId);
+    await _db.into(_db.expenseRecords).insert(companion);
+    return (_db.select(_db.expenseRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, ExpenseRecordsCompanion entity) async {
-    return _db.update(_db.expenseRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.expenseRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.expenseRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(ExpenseRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.expenseRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(ExpenseRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<ExpenseRecord?> getById(String id) async {
@@ -52,7 +52,7 @@ class ExpenseRepository {
     final today = DateTime(now.year, now.month, now.day);
     return (_db.select(_db.expenseRecords)
           ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.expenseDate.isBiggerOrEqual(today))
+          ..where((t) => t.expenseDate.isBiggerOrEqualValue(today))
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.expenseDate)]))
         .get();
@@ -72,8 +72,8 @@ class ExpenseRepository {
     final endDate = DateTime(year, month + 1, 1);
     return (_db.select(_db.expenseRecords)
           ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.expenseDate.isBiggerOrEqual(startDate))
-          ..where((t) => t.expenseDate.isSmallerThan(endDate))
+          ..where((t) => t.expenseDate.isBiggerOrEqualValue(startDate))
+          ..where((t) => t.expenseDate.isSmallerThanValue(endDate))
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.expenseDate)]))
         .get();
@@ -81,12 +81,20 @@ class ExpenseRepository {
 
   Future<double> getTotalByMonth(String babyId, int year, int month) async {
     final records = await getByMonth(babyId, year, month);
-    return records.fold(0.0, (sum, r) => sum + r.amount);
+    double total = 0;
+    for (final r in records) {
+      total += r.amount;
+    }
+    return total;
   }
 
   Future<double> getTotalByCategory(String babyId, String category) async {
     final records = await getByCategory(babyId, category);
-    return records.fold(0.0, (sum, r) => sum + r.amount);
+    double total = 0;
+    for (final r in records) {
+      total += r.amount;
+    }
+    return total;
   }
 
   Future<Map<String, double>> getCategoryStats(String babyId, int year, int month) async {
@@ -96,5 +104,19 @@ class ExpenseRepository {
       stats[record.category] = (stats[record.category] ?? 0.0) + record.amount;
     }
     return stats;
+  }
+
+  Future<List<ExpenseRecord>> getExpensesByDateRange(
+    String babyId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return (_db.select(_db.expenseRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.expenseDate.isBiggerOrEqualValue(start))
+          ..where((t) => t.expenseDate.isSmallerOrEqualValue(end))
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.expenseDate)]))
+        .get();
   }
 }

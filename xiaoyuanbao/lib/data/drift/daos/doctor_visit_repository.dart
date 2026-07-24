@@ -62,7 +62,7 @@ class DoctorVisitRepository {
   }) async {
     await (_db.update(_db.doctorVisitRecords)..where((t) => t.id.equals(id))).write(
           DoctorVisitRecordsCompanion(
-            diagnosis: Value(diagnosis),
+            diagnosis: diagnosis != null ? Value(diagnosis) : const Value.absent(),
             prescription: Value(prescription),
             followUpDate: Value(followUpDate),
             note: Value(note),

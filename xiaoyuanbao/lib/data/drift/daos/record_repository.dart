@@ -9,7 +9,7 @@ import '../tables/growth_records.dart';
 import '../tables/vaccine_records.dart';
 import '../tables/milestone_records.dart';
 import '../tables/diary_records.dart';
-import '../tables/stool_records.dart';
+import '../tables/stool_records.dart' hide StoolColor;
 import '../tables/skin_records.dart';
 import '../tables/allergy_records.dart';
 import '../tables/doctor_visit_records.dart';
@@ -23,7 +23,7 @@ import '../tables/parent_meeting_records.dart';
 import '../tables/personality_records.dart';
 import '../tables/emotion_records.dart';
 import '../tables/hobby_records.dart';
-import '../../core/constants/app_enums.dart';
+import '../../../core/constants/app_enums.dart';
 
 class RecordRepository {
   final AppDatabase _db;
@@ -551,7 +551,7 @@ class RecordRepository {
   }
 
   String _getFeedingTitle(FeedingRecord r) {
-    final type = FeedingType.values[r.type];
+    final type = FeedingType.values[r.type.index];
     return switch (type) {
       FeedingType.breastMilk => '母乳喂养',
       FeedingType.formula => '配方奶',
@@ -580,7 +580,7 @@ class RecordRepository {
   }
 
   String _getSleepTitle(SleepRecord r) {
-    final type = SleepType.values[r.type];
+    final type = SleepType.values[r.type.index];
     return switch (type) {
       SleepType.night => '夜间睡眠',
       SleepType.nap => '小睡',
@@ -609,7 +609,7 @@ class RecordRepository {
   }
 
   String _getDiaperTitle(DiaperRecord r) {
-    final type = DiaperType.values[r.type];
+    final type = DiaperType.values[r.type.index];
     return switch (type) {
       DiaperType.wet => '尿尿',
       DiaperType.dirty => '便便',
@@ -620,7 +620,7 @@ class RecordRepository {
   String _getDiaperSubtitle(DiaperRecord r) {
     final parts = <String>[];
     if (r.stoolColor != null) {
-      final color = StoolColor.values[r.stoolColor!];
+      final color = StoolColor.values[r.stoolColor!.index];
       parts.add(switch (color) {
         StoolColor.brown => '棕色',
         StoolColor.yellow => '黄色',
@@ -646,7 +646,7 @@ class RecordRepository {
 
   String _getTemperatureSubtitle(TemperatureRecord r) {
     final parts = <String>[];
-    final site = TemperatureSite.values[r.site];
+    final site = TemperatureSite.values[r.site.index];
     parts.add(switch (site) {
       TemperatureSite.armpit => '腋下',
       TemperatureSite.ear => '耳温',
@@ -716,7 +716,7 @@ class RecordRepository {
     if (r.totalDoses != null && r.totalDoses! > 1) {
       parts.add('第${r.doseNumber}剂/共${r.totalDoses}剂');
     }
-    final status = VaccineStatus.values[r.status];
+    final status = VaccineStatus.values[r.status.index];
     parts.add(switch (status) {
       VaccineStatus.scheduled => '已预约',
       VaccineStatus.completed => '已接种',
@@ -739,7 +739,7 @@ class RecordRepository {
 
   String _getMilestoneSubtitle(MilestoneRecord r) {
     final parts = <String>[];
-    final category = MilestoneCategory.values[r.category];
+    final category = MilestoneCategory.values[r.category.index];
     parts.add(switch (category) {
       MilestoneCategory.motor => '大运动',
       MilestoneCategory.language => '语言',
@@ -794,7 +794,7 @@ class RecordRepository {
 
   String _getStoolSubtitle(StoolRecord r) {
     final parts = <String>[];
-    final color = StoolColor.values[r.color];
+    final color = StoolColor.values[r.color.index];
     parts.add(switch (color) {
       StoolColor.brown => '棕色',
       StoolColor.yellow => '黄色',
@@ -804,7 +804,7 @@ class RecordRepository {
       StoolColor.white => '白色',
       StoolColor.gray => '灰色',
     });
-    final bristol = BristolType.values[r.bristolType];
+    final bristol = BristolType.values[r.bristolType.index];
     parts.add(switch (bristol) {
       BristolType.type1 => '干硬',
       BristolType.type2 => '硬块',
@@ -824,7 +824,7 @@ class RecordRepository {
   }
 
   String _getSkinTitle(SkinRecord r) {
-    final condition = SkinCondition.values[r.condition];
+    final condition = SkinCondition.values[r.condition.index];
     return switch (condition) {
       SkinCondition.eczema => '湿疹',
       SkinCondition.heatRash => '痱子',
@@ -840,7 +840,7 @@ class RecordRepository {
     if (r.location != null && r.location!.isNotEmpty) {
       parts.add('位置: ${r.location}');
     }
-    final severity = Severity.values[r.severity];
+    final severity = Severity.values[r.severity.index];
     parts.add(switch (severity) {
       Severity.mild => '轻度',
       Severity.moderate => '中度',
@@ -862,7 +862,7 @@ class RecordRepository {
   String _getAllergySubtitle(AllergyRecord r) {
     final parts = <String>[];
     parts.add(r.reaction);
-    final severity = AllergySeverity.values[r.severity];
+    final severity = AllergySeverity.values[r.severity.index];
     parts.add(switch (severity) {
       AllergySeverity.mild => '轻度',
       AllergySeverity.moderate => '中度',
@@ -899,7 +899,7 @@ class RecordRepository {
   }
 
   String _getTeethTitle(TeethRecord r) {
-    final eventType = TeethEventType.values[r.eventType];
+    final eventType = TeethEventType.values[r.eventType.index];
     return switch (eventType) {
       TeethEventType.eruption => '长牙',
       TeethEventType.shedding => '换牙',
@@ -938,7 +938,7 @@ class RecordRepository {
   }
 
   String _getSchoolTitle(SchoolRecord r) {
-    final type = SchoolType.values[r.schoolType];
+    final type = SchoolType.values[r.schoolType.index];
     return switch (type) {
       SchoolType.kindergarten => '幼儿园',
       SchoolType.primary => '小学',
@@ -966,7 +966,7 @@ class RecordRepository {
 
   String _getExamSubtitle(ExamRecord r) {
     final parts = <String>[];
-    final examType = ExamType.values[r.examType];
+    final examType = ExamType.values[r.examType.index];
     parts.add(switch (examType) {
       ExamType.unitTest => '单元测试',
       ExamType.midterm => '期中考试',
@@ -994,7 +994,7 @@ class RecordRepository {
 
   String _getAwardSubtitle(AwardRecord r) {
     final parts = <String>[];
-    final level = AwardLevel.values[r.awardLevel];
+    final level = AwardLevel.values[r.awardLevel.index];
     parts.add(switch (level) {
       AwardLevel.school => '校级',
       AwardLevel.district => '区级',
@@ -1011,7 +1011,7 @@ class RecordRepository {
   }
 
   String _getInterestClassTitle(InterestClassRecord r) {
-    final type = InterestType.values[r.interestType];
+    final type = InterestType.values[r.interestType.index];
     return switch (type) {
       InterestType.piano => '钢琴',
       InterestType.dance => '舞蹈',
@@ -1059,7 +1059,7 @@ class RecordRepository {
   }
 
   String _getPersonalityTitle(PersonalityRecord r) {
-    final trait = PersonalityTrait.values[r.trait];
+    final trait = PersonalityTrait.values[r.trait.index];
     return switch (trait) {
       PersonalityTrait.bold => '胆大',
       PersonalityTrait.cautious => '谨慎',
@@ -1087,7 +1087,7 @@ class RecordRepository {
   }
 
   String _getEmotionTitle(EmotionRecord r) {
-    final emotion = EmotionType.values[r.emotionType];
+    final emotion = EmotionType.values[r.emotionType.index];
     return switch (emotion) {
       EmotionType.happy => '开心',
       EmotionType.sad => '难过',

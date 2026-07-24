@@ -9,11 +9,11 @@ class ItemRecords extends Table {
   TextColumn get size => text().nullable().withLength(max: 50)();
   TextColumn get description => text().nullable()();
   DateTimeColumn get startDate => dateTime()();
-  DateTimeColumn get endDate => dateTime().nullable();
+  DateTimeColumn get endDate => dateTime().nullable()();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get deletedAt => dateTime().nullable();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

@@ -13,23 +13,23 @@ class GrowthMessageRepository {
   Future<GrowthMessageRecord> insert(GrowthMessageRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.growthMessageRecords).insert(companion);
-    return _db.growthMessageRecords.get(insertedId);
+    await _db.into(_db.growthMessageRecords).insert(companion);
+    return (_db.select(_db.growthMessageRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, GrowthMessageRecordsCompanion entity) async {
-    return _db.update(_db.growthMessageRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.growthMessageRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.growthMessageRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(GrowthMessageRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.growthMessageRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(GrowthMessageRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<GrowthMessageRecord?> getById(String id) async {
@@ -74,11 +74,11 @@ class GrowthMessageRepository {
   }
 
   Future<int> unlockMessage(String id) async {
-    return _db.update(_db.growthMessageRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(GrowthMessageRecordsCompanion(
-        isLocked: const Value(false),
-        updatedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.growthMessageRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(GrowthMessageRecordsCompanion(
+          isLocked: const Value(false),
+          updatedAt: Value(DateTime.now()),
+        ));
   }
 }

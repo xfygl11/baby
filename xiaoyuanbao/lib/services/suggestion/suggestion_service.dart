@@ -444,7 +444,7 @@ class SuggestionService {
     final milestones = await milestoneRepository.getMilestonesByBabyId(babyId);
 
     final pendingMilestones = milestones.where(
-      (m) => m.expectedAgeMonths <= ageMonths && m.achieveDate == null,
+      (m) => m.expectedAgeMonths != null && m.expectedAgeMonths! <= ageMonths && m.achieveDate == null,
     ).toList();
 
     if (pendingMilestones.isNotEmpty && pendingMilestones.length <= 3) {

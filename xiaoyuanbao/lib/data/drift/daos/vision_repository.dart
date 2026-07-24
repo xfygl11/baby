@@ -59,8 +59,8 @@ class VisionRepository {
   }) async {
     await (_db.update(_db.visionRecords)..where((t) => t.id.equals(id))).write(
           VisionRecordsCompanion(
-            leftEye: Value(leftEye),
-            rightEye: Value(rightEye),
+            leftEye: leftEye != null ? Value(leftEye) : const Value.absent(),
+            rightEye: rightEye != null ? Value(rightEye) : const Value.absent(),
             note: Value(note),
             updatedAt: Value(DateTime.now()),
           ),

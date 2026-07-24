@@ -13,23 +13,23 @@ class QuoteRepository {
   Future<QuoteRecord> insert(QuoteRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.quoteRecords).insert(companion);
-    return _db.quoteRecords.get(insertedId);
+    await _db.into(_db.quoteRecords).insert(companion);
+    return (_db.select(_db.quoteRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, QuoteRecordsCompanion entity) async {
-    return _db.update(_db.quoteRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.quoteRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.quoteRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(QuoteRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.quoteRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(QuoteRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<QuoteRecord?> getById(String id) async {
@@ -70,7 +70,21 @@ class QuoteRepository {
     final today = DateTime(now.year, now.month, now.day);
     return (_db.select(_db.quoteRecords)
           ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.recordTime.isBiggerOrEqual(today))
+          ..where((t) => t.recordTime.isBiggerOrEqualValue(today))
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.recordTime)]))
+        .get();
+  }
+
+  Future<List<QuoteRecord>> getQuotesByDateRange(
+    String babyId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return (_db.select(_db.quoteRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.recordTime.isBiggerOrEqualValue(start))
+          ..where((t) => t.recordTime.isSmallerOrEqualValue(end))
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.recordTime)]))
         .get();

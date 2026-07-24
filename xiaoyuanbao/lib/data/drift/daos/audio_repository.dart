@@ -116,14 +116,32 @@ class AudioRepository {
   Future<int> getAudioCount(String babyId) async {
     return await (_db.selectOnly(_db.audioRecords)
           ..addColumns([_db.audioRecords.id.count()])
-          ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.isDeleted.equals(false)))
+          ..where(_db.audioRecords.babyId.equals(babyId))
+          ..where(_db.audioRecords.isDeleted.equals(false)))
         .map((row) => row.read(_db.audioRecords.id.count()!)!)
         .getSingle();
   }
 
   Future<double> getTotalDurationMinutes(String babyId) async {
     final records = await getAudiosByBabyId(babyId);
-    return records.fold(0.0, (sum, r) => sum + r.durationSeconds / 60);
+    double total = 0;
+    for (final r in records) {
+      total += r.durationSeconds / 60;
+    }
+    return total;
+  }
+
+  Future<List<AudioRecord>> getAudiosByDateRange(
+    String babyId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return await (_db.select(_db.audioRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.isDeleted.equals(false))
+          ..where((t) => t.recordDate.isBiggerOrEqualValue(start))
+          ..where((t) => t.recordDate.isSmallerOrEqualValue(end))
+          ..orderBy([(t) => OrderingTerm.desc(t.recordDate)]))
+        .get();
   }
 }

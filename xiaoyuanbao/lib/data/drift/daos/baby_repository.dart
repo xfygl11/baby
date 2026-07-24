@@ -28,7 +28,7 @@ class BabyRepository {
           BabiesCompanion.insert(
             id: id,
             name: name,
-            gender: gender,
+            gender: Value(BabyGenderEnum.values[gender]),
             birthDate: birthDate,
             birthWeight: Value(birthWeight),
             birthHeight: Value(birthHeight),

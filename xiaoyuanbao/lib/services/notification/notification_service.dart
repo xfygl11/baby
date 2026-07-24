@@ -45,7 +45,7 @@ class NotificationService {
     required String title,
     required String body,
     String? payload,
-    NotificationImportance importance = NotificationImportance.high,
+    Importance importance = Importance.high,
     Priority priority = Priority.high,
   }) async {
     await init();
@@ -98,7 +98,7 @@ class NotificationService {
       'xiaoyuanbao_reminder',
       '疫苗/喂养提醒',
       channelDescription: '疫苗接种和喂养提醒',
-      importance: NotificationImportance.high,
+      importance: Importance.high,
       priority: Priority.high,
     );
 
@@ -192,7 +192,7 @@ class NotificationService {
     
     if (androidImplementation != null) {
       final granted = await androidImplementation.requestNotificationsPermission();
-      return granted;
+      return granted ?? false;
     }
     
     return true;

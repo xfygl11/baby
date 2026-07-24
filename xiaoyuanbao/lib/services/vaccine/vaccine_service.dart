@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import '../../data/drift/app_database.dart';
 import '../../data/drift/daos/vaccine_repository.dart';
 import '../../data/drift/tables/vaccine_records.dart';
@@ -204,9 +205,11 @@ class VaccineService {
       final scheduledDate = _calculateVaccineDate(birthDate, months);
       vaccines.add(
         VaccineRecordsCompanion.insert(
+          id: '',
+          babyId: babyId,
           vaccineName: vaccine['name'] as String,
-          category: Value(VaccineCategoryEnum.national.index),
-          status: Value(VaccineStatusEnum.scheduled.index),
+          category: Value(VaccineCategoryEnum.national),
+          status: Value(VaccineStatusEnum.scheduled),
           doseNumber: Value(vaccine['dose'] as int),
           totalDoses: Value(vaccine['totalDoses'] as int),
           scheduledDate: Value(scheduledDate),

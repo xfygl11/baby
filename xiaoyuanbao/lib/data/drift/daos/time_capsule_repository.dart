@@ -18,18 +18,18 @@ class TimeCapsuleRepository {
   }
 
   Future<int> updateById(String id, TimeCapsuleRecordsCompanion entity) async {
-    return _db.update(_db.timeCapsuleRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.timeCapsuleRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.timeCapsuleRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(TimeCapsuleRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.timeCapsuleRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(TimeCapsuleRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<TimeCapsuleRecord?> getById(String id) async {

@@ -62,7 +62,7 @@ class ExamRepository {
   }) async {
     await (_db.update(_db.examRecords)..where((t) => t.id.equals(id))).write(
           ExamRecordsCompanion(
-            score: Value(score),
+            score: score != null ? Value(score) : const Value.absent(),
             fullScore: Value(fullScore),
             rank: Value(rank),
             note: Value(note),
@@ -88,6 +88,15 @@ class ExamRepository {
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.examDate)]))
         .get();
+  }
+
+  Future<ExamRecord?> getLatestExam(String babyId) async {
+    return (_db.select(_db.examRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.examDate)])
+          ..limit(1))
+        .getSingleOrNull();
   }
 
   Future<List<ExamRecord>> getExamsByDateRange(

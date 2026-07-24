@@ -13,23 +13,23 @@ class SizeRepository {
   Future<SizeRecord> insert(SizeRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.sizeRecords).insert(companion);
-    return _db.sizeRecords.get(insertedId);
+    await _db.into(_db.sizeRecords).insert(companion);
+    return (_db.select(_db.sizeRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, SizeRecordsCompanion entity) async {
-    return _db.update(_db.sizeRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.sizeRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.sizeRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(SizeRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.sizeRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(SizeRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<SizeRecord?> getById(String id) async {

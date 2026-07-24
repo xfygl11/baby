@@ -113,8 +113,8 @@ class PhotoRepository {
   Future<int> getPhotoCount(String babyId) async {
     return await (_db.selectOnly(_db.photoRecords)
           ..addColumns([_db.photoRecords.id.count()])
-          ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.isDeleted.equals(false)))
+          ..where(_db.photoRecords.babyId.equals(babyId))
+          ..where(_db.photoRecords.isDeleted.equals(false)))
         .map((row) => row.read(_db.photoRecords.id.count()!)!)
         .getSingle();
   }
@@ -131,6 +131,20 @@ class PhotoRepository {
     return stats.entries
         .map((e) => {'month': e.key, 'count': e.value})
         .toList()
-      ..sort((a, b) => b['month'].compareTo(a['month']));
+      ..sort((a, b) => (b['month'] as String).compareTo(a['month'] as String));
+  }
+
+  Future<List<PhotoRecord>> getPhotosByDateRange(
+    String babyId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return await (_db.select(_db.photoRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.isDeleted.equals(false))
+          ..where((t) => t.captureDate.isBiggerOrEqualValue(start))
+          ..where((t) => t.captureDate.isSmallerOrEqualValue(end))
+          ..orderBy([(t) => OrderingTerm.desc(t.captureDate)]))
+        .get();
   }
 }

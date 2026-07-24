@@ -5,6 +5,7 @@ import '../../data/drift/app_database.dart';
 import '../../data/drift/daos/baby_repository.dart';
 import '../../data/drift/daos/feeding_repository.dart';
 import '../../data/drift/daos/sleep_repository.dart';
+import '../../data/drift/daos/diaper_repository.dart';
 import '../../data/drift/daos/vaccine_repository.dart';
 import '../../data/drift/daos/growth_repository.dart';
 import '../../data/drift/daos/milestone_repository.dart';
@@ -73,6 +74,11 @@ final feedingRepositoryProvider = Provider<FeedingRepository>((ref) {
 final sleepRepositoryProvider = Provider<SleepRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return SleepRepository(db);
+});
+
+final diaperRepositoryProvider = Provider<DiaperRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return DiaperRepository(db);
 });
 
 final vaccineRepositoryProvider = Provider<VaccineRepository>((ref) {

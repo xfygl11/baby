@@ -218,7 +218,7 @@ class AiService extends ChangeNotifier {
   Future<List<AiChatMessage>> getChatHistory() async {
     await ensureBabyLoaded();
     if (_currentBabyId == null) return [];
-    return _chatRepository.getRecentMessages(_currentBabyId!, limit: 50);
+    return _chatRepository.getRecentMessages(_currentBabyId!, 50);
   }
 
   Future<void> clearChatHistory() async {

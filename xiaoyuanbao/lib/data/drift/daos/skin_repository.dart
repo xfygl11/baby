@@ -25,9 +25,9 @@ class SkinRepository {
             id: id,
             babyId: babyId,
             time: time,
-            condition: condition.index,
+            condition: condition,
             location: Value(location),
-            severity: severity.index,
+            severity: severity,
             treatment: Value(treatment),
             imagePath: Value(imagePath),
             note: Value(note),
@@ -60,9 +60,9 @@ class SkinRepository {
   }) async {
     await (_db.update(_db.skinRecords)..where((t) => t.id.equals(id))).write(
           SkinRecordsCompanion(
-            condition: condition != null ? Value(condition.index) : const Value.absent(),
+            condition: condition != null ? Value(condition) : const Value.absent(),
             location: Value(location),
-            severity: severity != null ? Value(severity.index) : const Value.absent(),
+            severity: severity != null ? Value(severity) : const Value.absent(),
             treatment: Value(treatment),
             imagePath: Value(imagePath),
             note: Value(note),

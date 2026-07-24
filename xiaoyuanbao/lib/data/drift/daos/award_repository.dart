@@ -57,7 +57,7 @@ class AwardRepository {
   }) async {
     await (_db.update(_db.awardRecords)..where((t) => t.id.equals(id))).write(
           AwardRecordsCompanion(
-            awardingOrganization: Value(awardingOrganization),
+            awardingOrganization: awardingOrganization != null ? Value(awardingOrganization) : const Value.absent(),
             certificatePath: Value(certificatePath),
             note: Value(note),
             updatedAt: Value(DateTime.now()),
@@ -82,5 +82,14 @@ class AwardRepository {
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.awardDate)]))
         .get();
+  }
+
+  Future<AwardRecord?> getLatestAward(String babyId) async {
+    return (_db.select(_db.awardRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.awardDate)])
+          ..limit(1))
+        .getSingleOrNull();
   }
 }

@@ -27,7 +27,7 @@ class MilestoneRepository {
             id: id,
             babyId: babyId,
             name: name,
-            category: category,
+            category: Value(MilestoneCategoryEnum.values[category]),
             achieveDate: Value(achieveDate),
             description: Value(description),
             imagePath: Value(imagePath),

@@ -104,7 +104,7 @@ class TimelineService {
     for (final entry in groups.entries) {
       String ageLabel = '';
       if (baby != null) {
-        final age = DateTimeUtils.calculateAge(baby.birthDate, now: entry.date);
+        final age = DateTimeUtils.calculateAge(baby.birthDate, now: entry.key);
         ageLabel = '${age.years}岁${age.months}月${age.days}天';
       }
 

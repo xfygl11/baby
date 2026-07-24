@@ -56,7 +56,7 @@ class ParentMeetingRepository {
   }) async {
     await (_db.update(_db.parentMeetingRecords)..where((t) => t.id.equals(id))).write(
           ParentMeetingRecordsCompanion(
-            teacherComments: Value(teacherComments),
+            teacherComments: teacherComments != null ? Value(teacherComments) : const Value.absent(),
             keyPoints: Value(keyPoints),
             improvementPlan: Value(improvementPlan),
             note: Value(note),

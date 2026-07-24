@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import '../../data/drift/app_database.dart';
 import '../../data/drift/daos/milestone_repository.dart';
 import '../../data/drift/tables/milestone_records.dart';
 
@@ -421,7 +422,7 @@ class MilestoneService {
       toInsert.add(
         MilestoneRecordsCompanion(
           name: Value(template.name),
-          category: Value(template.category),
+          category: Value(MilestoneCategoryEnum.values[template.category]),
           expectedAgeMonths: Value(template.expectedAgeMonths),
           description: Value(template.description),
           isCustom: const Value(false),

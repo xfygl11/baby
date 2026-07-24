@@ -30,7 +30,7 @@ class SettingsRepository {
             AppSettingsCompanion.insert(
               id: key,
               value: Value(value),
-              type: 'string',
+              type: const Value('string'),
             ),
           );
     }
@@ -62,7 +62,7 @@ class SettingsRepository {
             AppSettingsCompanion.insert(
               id: key,
               value: Value(value.toString()),
-              type: 'bool',
+              type: const Value('bool'),
             ),
           );
     }
@@ -94,7 +94,7 @@ class SettingsRepository {
             AppSettingsCompanion.insert(
               id: key,
               value: Value(value.toString()),
-              type: 'int',
+              type: const Value('int'),
             ),
           );
     }
@@ -126,7 +126,7 @@ class SettingsRepository {
             AppSettingsCompanion.insert(
               id: key,
               value: Value(value.toString()),
-              type: 'double',
+              type: const Value('double'),
             ),
           );
     }

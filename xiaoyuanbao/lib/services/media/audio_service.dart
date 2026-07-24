@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_sound/flutter_sound.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -63,7 +64,7 @@ class AudioService {
 
   Future<String?> stopRecording(String babyId) async {
     try {
-      final duration = await _recorder.stopRecorder();
+      await _recorder.stopRecorder();
       _recordingTimer?.cancel();
 
       if (_currentRecordingPath == null) {
@@ -76,7 +77,7 @@ class AudioService {
       }
 
       final sizeMb = file.lengthSync() / (1024 * 1024);
-      final durationSeconds = duration?.inSeconds ?? _recordingSeconds;
+      final durationSeconds = _recordingSeconds;
 
       final id = await _audioRepository.addAudio(
         babyId: babyId,

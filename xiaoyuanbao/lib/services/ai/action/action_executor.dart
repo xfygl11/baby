@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../../../core/constants/app_enums.dart';
+import '../../../data/drift/app_database.dart';
 import '../../../data/drift/daos/baby_repository.dart';
 import '../../../data/drift/daos/feeding_repository.dart';
 import '../../../data/drift/daos/sleep_repository.dart';
@@ -294,7 +295,7 @@ class ActionExecutor {
       recordType: 'sleep',
       data: {
         'type': type,
-        'location': locationIndex,
+        'location': location,
         'startTime': now.toIso8601String(),
       },
     );

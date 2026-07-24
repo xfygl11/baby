@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_time_utils.dart';
 import '../../../data/drift/app_database.dart';
+import '../../../data/drift/tables/teeth_records.dart';
 import '../../../data/drift/daos/growth_repository.dart';
 import '../../../data/drift/daos/teeth_repository.dart';
 import '../../../services/growth/growth_service.dart';
@@ -139,7 +140,7 @@ class _GrowthCurveTabState extends ConsumerState<GrowthCurveTab> {
     final headCtrl = TextEditingController();
     final theme = AppTheme.of(context);
     final inputType =
-        const TextInputType(numberWithOptions(decimal: true));
+        const TextInputType.numberWithOptions(decimal: true);
 
     showDialog(
       context: context,
@@ -2007,8 +2008,12 @@ class _TeethTabState extends ConsumerState<TeethTab> {
               final repo = ref.read(teethRepositoryProvider);
               await repo.addTeeth(
                 babyId: widget.baby.id,
-                toothNumber: selectedTooth!,
-                eruptionDate: DateTime.now(),
+                eventType: TeethEventType.eruption,
+                position: selectedTooth!.toString(),
+                positionName:
+                    '${selectedTooth! % 2 == 0 ? '左' : '右'}'
+                    '${_toothNames[selectedTooth! ~/ 2]}',
+                eventDate: DateTime.now(),
               );
               Navigator.of(ctx).pop();
               _refresh();
@@ -2038,7 +2043,8 @@ class _TeethTabState extends ConsumerState<TeethTab> {
           );
         }
         final teeth = snapshot.data ?? [];
-        final eruptedCount = teeth.where((t) => t.eruptionDate != null).length;
+        final eruptedCount =
+            teeth.where((t) => t.eventType == TeethEventType.eruption).length;
 
         return SingleChildScrollView(
           padding: EdgeInsets.all(theme.spacingMd),
@@ -2216,14 +2222,22 @@ class _TeethTabState extends ConsumerState<TeethTab> {
   }
 
   Widget _buildTooth(List<TeethRecord> teeth, int toothNumber, AppTheme theme) {
-    final tooth = teeth.firstWhere((t) => t.toothNumber == toothNumber, orElse: () => TeethRecord(
-      id: '',
-      babyId: '',
-      toothNumber: toothNumber,
-      eruptionDate: null,
-      note: null,
-    ));
-    final erupted = tooth.eruptionDate != null;
+    final tooth = teeth.firstWhere(
+      (t) => t.position == toothNumber.toString(),
+      orElse: () => TeethRecord(
+        id: '',
+        babyId: '',
+        eventType: TeethEventType.checkup,
+        position: toothNumber.toString(),
+        positionName: '',
+        eventDate: DateTime.now(),
+        note: null,
+        isDeleted: false,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+    final erupted = tooth.eventType == TeethEventType.eruption;
 
     return Container(
       width: 32,

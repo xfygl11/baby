@@ -22,7 +22,7 @@ class TeethRepository {
           TeethRecordsCompanion.insert(
             id: id,
             babyId: babyId,
-            eventType: eventType.index,
+            eventType: eventType,
             position: position,
             positionName: positionName,
             eventDate: eventDate,
@@ -52,7 +52,7 @@ class TeethRepository {
   }) async {
     await (_db.update(_db.teethRecords)..where((t) => t.id.equals(id))).write(
           TeethRecordsCompanion(
-            eventDate: Value(eventDate),
+            eventDate: eventDate != null ? Value(eventDate) : const Value.absent(),
             note: Value(note),
             updatedAt: Value(DateTime.now()),
           ),

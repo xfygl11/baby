@@ -23,7 +23,7 @@ class TemperatureRepository {
             id: id,
             babyId: babyId,
             temperature: temperature,
-            site: site,
+            site: Value(site),
             recordTime: recordTime,
             note: Value(note),
             isFever: Value(isFever),
@@ -76,7 +76,7 @@ class TemperatureRepository {
 
   Future<void> updateTemperature(
       String id, TemperatureRecordsCompanion data) async {
-    final isFever = data.temperature.present
+    final Value<bool> isFever = data.temperature.present
         ? Value(data.temperature.value >= 37.5)
         : const Value.absent();
     await (_db.update(_db.temperatureRecords)..where((t) => t.id.equals(id)))

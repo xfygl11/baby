@@ -13,23 +13,23 @@ class ActivityRepository {
   Future<ActivityRecord> insert(ActivityRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.activityRecords).insert(companion);
-    return _db.activityRecords.get(insertedId);
+    await _db.into(_db.activityRecords).insert(companion);
+    return (_db.select(_db.activityRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, ActivityRecordsCompanion entity) async {
-    return _db.update(_db.activityRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.activityRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.activityRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(ActivityRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.activityRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(ActivityRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<ActivityRecord?> getById(String id) async {
@@ -52,7 +52,7 @@ class ActivityRepository {
     final today = DateTime(now.year, now.month, now.day);
     return (_db.select(_db.activityRecords)
           ..where((t) => t.babyId.equals(babyId))
-          ..where((t) => t.startTime.isBiggerOrEqual(today))
+          ..where((t) => t.startTime.isBiggerOrEqualValue(today))
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.startTime)]))
         .get();
@@ -71,6 +71,20 @@ class ActivityRepository {
     return (_db.select(_db.activityRecords)
           ..where((t) => t.babyId.equals(babyId))
           ..where((t) => t.endTime.isNull())
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.startTime)]))
+        .get();
+  }
+
+  Future<List<ActivityRecord>> getActivitiesByDateRange(
+    String babyId,
+    DateTime start,
+    DateTime end,
+  ) async {
+    return (_db.select(_db.activityRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.startTime.isBiggerOrEqualValue(start))
+          ..where((t) => t.startTime.isSmallerOrEqualValue(end))
           ..where((t) => t.isDeleted.equals(false))
           ..orderBy([(t) => OrderingTerm.desc(t.startTime)]))
         .get();

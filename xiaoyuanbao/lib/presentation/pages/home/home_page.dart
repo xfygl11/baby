@@ -628,7 +628,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
             child: _OverviewCard(
               icon: '😊',
               title: '最近情绪',
-              primary: emotion != null ? _getEmotionLabel(emotion.emotionType) : '--',
+              primary: emotion != null ? _getEmotionLabel(emotion.emotionType.index) : '--',
               secondary: emotion != null ? '${emotion.triggerEvent ?? ''}' : '--',
               onTap: () {},
             ),
@@ -1123,7 +1123,7 @@ class _RecordItem extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

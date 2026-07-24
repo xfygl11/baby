@@ -13,23 +13,23 @@ class ItemRepository {
   Future<ItemRecord> insert(ItemRecordsCompanion entity) async {
     final id = _uuid.v4();
     final companion = entity.copyWith(id: Value(id));
-    final insertedId = await _db.into(_db.itemRecords).insert(companion);
-    return _db.itemRecords.get(insertedId);
+    await _db.into(_db.itemRecords).insert(companion);
+    return (_db.select(_db.itemRecords)..where((t) => t.id.equals(id))).getSingle();
   }
 
   Future<int> updateById(String id, ItemRecordsCompanion entity) async {
-    return _db.update(_db.itemRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.itemRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.itemRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(ItemRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.itemRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(ItemRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<ItemRecord?> getById(String id) async {

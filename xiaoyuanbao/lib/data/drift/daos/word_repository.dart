@@ -18,18 +18,18 @@ class WordRepository {
   }
 
   Future<int> updateById(String id, WordRecordsCompanion entity) async {
-    return _db.update(_db.wordRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(entity.copyWith(updatedAt: Value(DateTime.now())));
+    return (_db.update(_db.wordRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(entity.copyWith(updatedAt: Value(DateTime.now())));
   }
 
   Future<int> deleteById(String id) async {
-    return _db.update(_db.wordRecords)
-      ..where((t) => t.id.equals(id))
-      ..write(WordRecordsCompanion(
-        isDeleted: const Value(true),
-        deletedAt: Value(DateTime.now()),
-      ));
+    return (_db.update(_db.wordRecords)
+          ..where((t) => t.id.equals(id)))
+        .write(WordRecordsCompanion(
+          isDeleted: const Value(true),
+          deletedAt: Value(DateTime.now()),
+        ));
   }
 
   Future<WordRecord?> getById(String id) async {

@@ -23,8 +23,8 @@ class StoolRepository {
             id: id,
             babyId: babyId,
             time: time,
-            color: color.index,
-            bristolType: bristolType.index,
+            color: color,
+            bristolType: bristolType,
             amount: Value(amount),
             note: Value(note),
           ),
@@ -54,8 +54,8 @@ class StoolRepository {
   }) async {
     await (_db.update(_db.stoolRecords)..where((t) => t.id.equals(id))).write(
           StoolRecordsCompanion(
-            color: color != null ? Value(color.index) : const Value.absent(),
-            bristolType: bristolType != null ? Value(bristolType.index) : const Value.absent(),
+            color: color != null ? Value(color) : const Value.absent(),
+            bristolType: bristolType != null ? Value(bristolType) : const Value.absent(),
             amount: Value(amount),
             note: Value(note),
             updatedAt: Value(DateTime.now()),

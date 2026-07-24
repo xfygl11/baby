@@ -105,7 +105,7 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
 
   Future<List<TimelineGroup>> _groupItems(List<TimelineItem> items) async {
     if (items.isEmpty) return [];
-    final baby = await ref.read(currentBabyProvider).future;
+    final baby = await ref.read(currentBabyProvider.future);
     final grouped = <DateTime, List<TimelineItem>>{};
     for (final item in items) {
       final date = DateTimeUtils.startOfDay(item.time);

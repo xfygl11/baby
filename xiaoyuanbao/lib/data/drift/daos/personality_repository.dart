@@ -55,7 +55,7 @@ class PersonalityRepository {
   }) async {
     await (_db.update(_db.personalityRecords)..where((t) => t.id.equals(id))).write(
           PersonalityRecordsCompanion(
-            description: Value(description),
+            description: description != null ? Value(description) : const Value.absent(),
             context: Value(context),
             note: Value(note),
             updatedAt: Value(DateTime.now()),

@@ -24,8 +24,8 @@ class DiaperRepository {
           DiaperRecordsCompanion.insert(
             id: id,
             babyId: babyId,
-            type: type,
-            stoolColor: Value(stoolColor),
+            type: Value(DiaperTypeEnum.values[type]),
+            stoolColor: Value(stoolColor == null ? null : StoolColorEnum.values[stoolColor]),
             stoolConsistency: Value(stoolConsistency),
             hasRash: Value(hasRash),
             rashSeverity: Value(rashSeverity),

@@ -35,8 +35,8 @@ class VaccineRepository {
             babyId: babyId,
             vaccineName: vaccineName,
             vaccineCode: Value(vaccineCode),
-            category: Value(category.index),
-            status: Value(status.index),
+            category: Value(category),
+            status: Value(status),
             doseNumber: Value(doseNumber),
             totalDoses: Value(totalDoses),
             scheduledDate: Value(scheduledDate),
@@ -123,7 +123,7 @@ class VaccineRepository {
   }) async {
     await (_db.update(_db.vaccineRecords)..where((t) => t.id.equals(id))).write(
           VaccineRecordsCompanion(
-            status: Value(VaccineStatusEnum.completed.index),
+            status: Value(VaccineStatusEnum.completed),
             vaccinationDate: Value(vaccinationDate ?? DateTime.now()),
             batchNumber: Value(batchNumber),
             manufacturer: Value(manufacturer),

@@ -74,10 +74,10 @@ class SchoolRepository {
   }) async {
     await (_db.update(_db.schoolRecords)..where((t) => t.id.equals(id))).write(
           SchoolRecordsCompanion(
-            schoolName: Value(schoolName),
-            grade: Value(grade),
-            className: Value(className),
-            teacherName: Value(teacherName),
+            schoolName: schoolName != null ? Value(schoolName) : const Value.absent(),
+            grade: grade != null ? Value(grade) : const Value.absent(),
+            className: className != null ? Value(className) : const Value.absent(),
+            teacherName: teacherName != null ? Value(teacherName) : const Value.absent(),
             graduationDate: Value(graduationDate),
             note: Value(note),
             updatedAt: Value(DateTime.now()),

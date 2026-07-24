@@ -27,9 +27,9 @@ class FeedingRepository {
           FeedingRecordsCompanion.insert(
             id: id,
             babyId: babyId,
-            type: type,
+            type: Value(FeedingTypeEnum.values[type]),
             amountMl: Value(amountMl),
-            breastSide: Value(breastSide),
+            breastSide: Value(breastSide == null ? null : BreastSideEnum.values[breastSide]),
             formulaBrand: Value(formulaBrand),
             foodName: Value(foodName),
             startTime: startTime,

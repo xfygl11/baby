@@ -119,7 +119,7 @@ class ThemeBuilder {
         ),
       ),
       
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         color: stage.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(

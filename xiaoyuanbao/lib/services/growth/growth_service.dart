@@ -14,7 +14,7 @@ class GrowthDataPoint {
   final double p90;
   final double p97;
 
-  GrowthDataPoint({
+  const GrowthDataPoint({
     required this.ageMonths,
     required this.p3,
     required this.p10,

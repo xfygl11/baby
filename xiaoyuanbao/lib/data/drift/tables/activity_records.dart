@@ -6,12 +6,12 @@ class ActivityRecords extends Table {
   TextColumn get babyId => text().withLength(min: 36, max: 36)();
   TextColumn get activityType => text().withLength(max: 50)();
   DateTimeColumn get startTime => dateTime()();
-  DateTimeColumn get endTime => dateTime().nullable();
+  DateTimeColumn get endTime => dateTime().nullable()();
   TextColumn get description => text().nullable()();
   BoolColumn get isDeleted => boolean().withDefault(const Constant(false))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
-  DateTimeColumn get deletedAt => dateTime().nullable();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

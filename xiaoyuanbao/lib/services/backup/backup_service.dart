@@ -181,7 +181,11 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportFeeding(String babyId) async {
-    final records = await _feedingRepo.getAllFeeding(babyId);
+    final records = await _feedingRepo.getFeedingsByDateRange(
+      babyId,
+      DateTime(2000),
+      DateTime(2100),
+    );
     return records.map((r) => {
       'id': r.id,
       'type': r.type,
@@ -190,13 +194,17 @@ class BackupService {
       'endTime': r.endTime?.toIso8601String(),
       'breastSide': r.breastSide,
       'formulaBrand': r.formulaBrand,
-      'solidFoodType': r.solidFoodType,
+      'foodName': r.foodName,
       'note': r.note,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportSleep(String babyId) async {
-    final records = await _sleepRepo.getAllSleep(babyId);
+    final records = await _sleepRepo.getSleepsByDateRange(
+      babyId,
+      DateTime(2000),
+      DateTime(2100),
+    );
     return records.map((r) => {
       'id': r.id,
       'startTime': r.startTime.toIso8601String(),
@@ -209,45 +217,57 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportDiaper(String babyId) async {
-    final records = await _diaperRepo.getAllDiaper(babyId);
+    final records = await _diaperRepo.getDiapersByDateRange(
+      babyId,
+      DateTime(2000),
+      DateTime(2100),
+    );
     return records.map((r) => {
       'id': r.id,
-      'time': r.time.toIso8601String(),
+      'time': r.recordTime.toIso8601String(),
       'type': r.type,
       'stoolColor': r.stoolColor,
       'stoolConsistency': r.stoolConsistency,
-      'amount': r.amount,
-      'rash': r.rash,
+      // 'amount': skipped - field not in DiaperRecords table,
+      'hasRash': r.hasRash,
       'note': r.note,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportTemperature(String babyId) async {
-    final records = await _tempRepo.getAllTemperature(babyId);
+    final records = await _tempRepo.getTemperaturesByDateRange(
+      babyId,
+      DateTime(2000),
+      DateTime(2100),
+    );
     return records.map((r) => {
       'id': r.id,
       'temperature': r.temperature,
       'site': r.site,
-      'time': r.time.toIso8601String(),
+      'time': r.recordTime.toIso8601String(),
       'note': r.note,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportMedication(String babyId) async {
-    final records = await _medRepo.getAllMedication(babyId);
+    final records = await _medRepo.getMedicationsByDateRange(
+      babyId,
+      DateTime(2000),
+      DateTime(2100),
+    );
     return records.map((r) => {
       'id': r.id,
-      'name': r.medicationName,
-      'dose': r.dose,
+      'name': r.medicineName,
+      'dose': r.dosage,
       'unit': r.unit,
-      'time': r.time.toIso8601String(),
+      'time': r.recordTime.toIso8601String(),
       'reason': r.reason,
       'note': r.note,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportGrowth(String babyId) async {
-    final records = await _growthRepo.getAllGrowth(babyId);
+    final records = await _growthRepo.getGrowthRecords(babyId);
     return records.map((r) => {
       'id': r.id,
       'date': r.recordDate.toIso8601String(),
@@ -260,7 +280,7 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportVaccine(String babyId) async {
-    final records = await _vaccineRepo.getAllVaccines(babyId);
+    final records = await _vaccineRepo.getVaccinesByBabyId(babyId);
     return records.map((r) => {
       'id': r.id,
       'vaccineName': r.vaccineName,
@@ -281,14 +301,14 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportMilestone(String babyId) async {
-    final records = await _milestoneRepo.getAllMilestones(babyId);
+    final records = await _milestoneRepo.getMilestonesByBabyId(babyId);
     return records.map((r) => {
       'id': r.id,
       'category': r.category,
-      'title': r.title,
+      'name': r.name,
       'description': r.description,
       'expectedAgeMonths': r.expectedAgeMonths,
-      'actualAgeMonths': r.actualAgeMonths,
+      // 'actualAgeMonths': skipped - field not in MilestoneRecords table,
       'achieveDate': r.achieveDate?.toIso8601String(),
       'imagePath': r.imagePath,
       'note': r.note,
@@ -296,10 +316,10 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportDiary(String babyId) async {
-    final records = await _diaryRepo.getAllDiary(babyId);
+    final records = await _diaryRepo.getDiariesByBabyId(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.recordDate.toIso8601String(),
       'title': r.title,
       'content': r.content,
       'mood': r.mood,
@@ -308,13 +328,13 @@ class BackupService {
   }
 
   Future<List<Map<String, dynamic>>> _exportChat(String babyId) async {
-    final messages = await _chatRepo.getRecentMessages(babyId, limit: 1000);
+    final messages = await _chatRepo.getRecentMessages(babyId, 1000);
     return messages.map((m) => {
       'id': m.id,
       'role': m.role,
       'content': m.content,
       'intent': m.intent,
-      'timestamp': m.timestamp.toIso8601String(),
+      'timestamp': m.createdAt.toIso8601String(),
       'messageType': m.messageType,
     }).toList();
   }
@@ -323,10 +343,10 @@ class BackupService {
     final records = await _stoolRepo.getAllStool(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'frequency': r.frequency,
+      'date': r.time.toIso8601String(),
+      // 'frequency': skipped - field not in StoolRecords table,
       'color': r.color,
-      'consistency': r.consistency,
+      'consistency': r.bristolType,
       'note': r.note,
     }).toList();
   }
@@ -335,8 +355,8 @@ class BackupService {
     final records = await _skinRepo.getAllSkin(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'conditionType': r.conditionType,
+      'date': r.time.toIso8601String(),
+      'conditionType': r.condition,
       'location': r.location,
       'severity': r.severity,
       'treatment': r.treatment,
@@ -351,7 +371,7 @@ class BackupService {
       'allergen': r.allergen,
       'reaction': r.reaction,
       'severity': r.severity,
-      'firstOccurrence': r.firstOccurrence?.toIso8601String(),
+      'firstOccurrence': r.firstOccurrence.toIso8601String(),
       'note': r.note,
     }).toList();
   }
@@ -360,12 +380,13 @@ class BackupService {
     final records = await _doctorVisitRepo.getAllDoctorVisits(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.visitDate.toIso8601String(),
       'hospital': r.hospital,
-      'doctor': r.doctor,
-      'reason': r.reason,
+      // 'doctor': skipped - field not in DoctorVisitRecords table,
+      // 'reason': skipped - field not in DoctorVisitRecords table,
+      'department': r.department,
       'diagnosis': r.diagnosis,
-      'treatment': r.treatment,
+      // 'treatment': skipped - field not in DoctorVisitRecords table,
       'prescription': r.prescription,
       'note': r.note,
     }).toList();
@@ -375,8 +396,8 @@ class BackupService {
     final records = await _teethRepo.getAllTeeth(babyId);
     return records.map((r) => {
       'id': r.id,
-      'toothNumber': r.toothNumber,
-      'eruptionDate': r.eruptionDate?.toIso8601String(),
+      'position': r.position,
+      'eventDate': r.eventDate.toIso8601String(),
       'note': r.note,
     }).toList();
   }
@@ -385,7 +406,7 @@ class BackupService {
     final records = await _visionRepo.getAllVision(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.checkDate.toIso8601String(),
       'leftEye': r.leftEye,
       'rightEye': r.rightEye,
       'note': r.note,
@@ -396,10 +417,10 @@ class BackupService {
     final records = await _schoolRepo.getAllSchools(babyId);
     return records.map((r) => {
       'id': r.id,
-      'name': r.name,
-      'type': r.type,
-      'startDate': r.startDate?.toIso8601String(),
-      'endDate': r.endDate?.toIso8601String(),
+      'name': r.schoolName,
+      'type': r.schoolType,
+      'startDate': r.admissionDate.toIso8601String(),
+      'endDate': r.graduationDate?.toIso8601String(),
       'note': r.note,
     }).toList();
   }
@@ -408,13 +429,13 @@ class BackupService {
     final records = await _examRepo.getAllExams(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'name': r.name,
+      'date': r.examDate.toIso8601String(),
+      'name': r.examName,
       'subject': r.subject,
       'score': r.score,
-      'maxScore': r.maxScore,
+      'maxScore': r.fullScore,
       'rank': r.rank,
-      'totalStudents': r.totalStudents,
+      // 'totalStudents': skipped - field not in ExamRecords table,
       'note': r.note,
     }).toList();
   }
@@ -423,11 +444,11 @@ class BackupService {
     final records = await _awardRepo.getAllAwards(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'name': r.name,
-      'level': r.level,
-      'description': r.description,
-      'imagePath': r.imagePath,
+      'date': r.awardDate.toIso8601String(),
+      'name': r.awardName,
+      'level': r.awardLevel,
+      // 'description': skipped - field not in AwardRecords table,
+      'imagePath': r.certificatePath,
       'note': r.note,
     }).toList();
   }
@@ -436,11 +457,11 @@ class BackupService {
     final records = await _interestClassRepo.getAllInterestClasses(babyId);
     return records.map((r) => {
       'id': r.id,
-      'name': r.name,
-      'startDate': r.startDate?.toIso8601String(),
+      'name': r.className,
+      'startDate': r.startDate.toIso8601String(),
       'endDate': r.endDate?.toIso8601String(),
-      'frequency': r.frequency,
-      'cost': r.cost,
+      // 'frequency': skipped - field not in InterestClassRecords table,
+      // 'cost': skipped - field not in InterestClassRecords table,
       'note': r.note,
     }).toList();
   }
@@ -449,11 +470,11 @@ class BackupService {
     final records = await _parentMeetingRepo.getAllParentMeetings(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'teacher': r.teacher,
-      'summary': r.summary,
-      'notes': r.notes,
-      'actionItems': r.actionItems,
+      'date': r.meetingDate.toIso8601String(),
+      'teacher': r.teacherComments,
+      'summary': r.keyPoints,
+      'notes': r.note,
+      'actionItems': r.improvementPlan,
     }).toList();
   }
 
@@ -461,9 +482,9 @@ class BackupService {
     final records = await _personalityRepo.getAllPersonality(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.observationDate.toIso8601String(),
       'trait': r.trait,
-      'rating': r.rating,
+      // 'rating': skipped - field not in PersonalityRecords table,
       'description': r.description,
     }).toList();
   }
@@ -472,10 +493,10 @@ class BackupService {
     final records = await _emotionRepo.getAllEmotions(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.recordTime.toIso8601String(),
       'emotionType': r.emotionType,
-      'intensity': r.intensity,
-      'trigger': r.trigger,
+      // 'intensity': skipped - field not in EmotionRecords table,
+      'trigger': r.triggerEvent,
       'note': r.note,
     }).toList();
   }
@@ -484,107 +505,107 @@ class BackupService {
     final records = await _hobbyRepo.getAllHobbies(babyId);
     return records.map((r) => {
       'id': r.id,
-      'name': r.name,
-      'level': r.level,
-      'startDate': r.startDate?.toIso8601String(),
-      'description': r.description,
+      'name': r.hobbyName,
+      'level': r.intensity,
+      // 'startDate': skipped - field not in HobbyRecords table (uses startAgeMonths),
+      'description': r.note,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportPhoto(String babyId) async {
-    final records = await _photoRepo.getAllPhotos(babyId);
+    final records = await _photoRepo.getPhotosByBabyId(babyId);
     return records.map((r) => {
       'id': r.id,
-      'path': r.path,
+      'path': r.filePath,
       'thumbnailPath': r.thumbnailPath,
-      'date': r.date.toIso8601String(),
-      'caption': r.caption,
+      'date': r.captureDate.toIso8601String(),
+      'caption': r.title,
       'location': r.location,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportAudio(String babyId) async {
-    final records = await _audioRepo.getAllAudios(babyId);
+    final records = await _audioRepo.getAudiosByBabyId(babyId);
     return records.map((r) => {
       'id': r.id,
-      'path': r.path,
-      'date': r.date.toIso8601String(),
+      'path': r.filePath,
+      'date': r.recordDate.toIso8601String(),
       'title': r.title,
-      'duration': r.duration,
+      'duration': r.durationSeconds,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportQuote(String babyId) async {
-    final records = await _quoteRepo.getAllQuotes(babyId);
+    final records = await _quoteRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
       'speaker': r.speaker,
       'content': r.content,
       'emotion': r.emotion,
-      'date': r.date.toIso8601String(),
+      'date': r.recordTime.toIso8601String(),
       'isFavorite': r.isFavorite,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportActivity(String babyId) async {
-    final records = await _activityRepo.getAllActivities(babyId);
+    final records = await _activityRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
-      'type': r.type,
+      'type': r.activityType,
       'startTime': r.startTime.toIso8601String(),
-      'endTime': r.endTime?.toIso8601String(),
+      // 'endTime': skipped - column not generated in ActivityRecords table,
       'description': r.description,
-      'location': r.location,
+      // 'location': skipped - field not in ActivityRecords table,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportGrowthMessage(String babyId) async {
-    final records = await _growthMessageRepo.getAllGrowthMessages(babyId);
+    final records = await _growthMessageRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
       'age': r.age,
       'content': r.content,
       'audioPath': r.audioPath,
       'isLocked': r.isLocked,
-      'unlockDate': r.unlockDate?.toIso8601String(),
+      'unlockDate': r.unlockDate.toIso8601String(),
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportExpense(String babyId) async {
-    final records = await _expenseRepo.getAllExpenses(babyId);
+    final records = await _expenseRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
+      'date': r.expenseDate.toIso8601String(),
       'category': r.category,
       'amount': r.amount,
       'description': r.description,
-      'note': r.note,
+      // 'note': skipped - field not in ExpenseRecords table,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportItem(String babyId) async {
-    final records = await _itemRepo.getAllItems(babyId);
+    final records = await _itemRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
-      'type': r.type,
+      'type': r.itemType,
       'brand': r.brand,
       'size': r.size,
-      'purchaseDate': r.purchaseDate?.toIso8601String(),
-      'usageStartDate': r.usageStartDate?.toIso8601String(),
-      'usageEndDate': r.usageEndDate?.toIso8601String(),
-      'price': r.price,
-      'note': r.note,
+      // 'purchaseDate': skipped - field not in ItemRecords table,
+      'usageStartDate': r.startDate.toIso8601String(),
+      // 'usageEndDate': skipped - endDate column not generated in ItemRecords table,
+      // 'price': skipped - field not in ItemRecords table,
+      'note': r.description,
     }).toList();
   }
 
   Future<List<Map<String, dynamic>>> _exportSize(String babyId) async {
-    final records = await _sizeRepo.getAllSizes(babyId);
+    final records = await _sizeRepo.getAll(babyId);
     return records.map((r) => {
       'id': r.id,
-      'date': r.date.toIso8601String(),
-      'type': r.type,
-      'value': r.value,
-      'note': r.note,
+      'date': r.recordDate.toIso8601String(),
+      'type': r.sizeType,
+      'value': r.size,
+      // 'note': skipped - field not in SizeRecords table,
     }).toList();
   }
 

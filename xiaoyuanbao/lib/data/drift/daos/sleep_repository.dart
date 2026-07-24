@@ -26,8 +26,8 @@ class SleepRepository {
           SleepRecordsCompanion.insert(
             id: id,
             babyId: babyId,
-            type: type,
-            location: location,
+            type: Value(SleepTypeEnum.values[type]),
+            location: Value(SleepLocationEnum.values[location]),
             startTime: startTime,
             endTime: Value(endTime),
             durationMinutes: Value(durationMinutes),

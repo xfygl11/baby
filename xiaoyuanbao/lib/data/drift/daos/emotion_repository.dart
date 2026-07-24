@@ -86,4 +86,13 @@ class EmotionRepository {
           ..orderBy([(t) => OrderingTerm.desc(t.recordTime)]))
         .get();
   }
+
+  Future<EmotionRecord?> getLatestEmotion(String babyId) async {
+    return (_db.select(_db.emotionRecords)
+          ..where((t) => t.babyId.equals(babyId))
+          ..where((t) => t.isDeleted.equals(false))
+          ..orderBy([(t) => OrderingTerm.desc(t.recordTime)])
+          ..limit(1))
+        .getSingleOrNull();
+  }
 }

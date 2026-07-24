@@ -26,7 +26,7 @@ class AllergyRepository {
             babyId: babyId,
             allergen: allergen,
             reaction: reaction,
-            severity: severity.index,
+            severity: severity,
             firstOccurrence: firstOccurrence,
             lastOccurrence: Value(lastOccurrence),
             treatment: Value(treatment),
@@ -59,8 +59,8 @@ class AllergyRepository {
   }) async {
     await (_db.update(_db.allergyRecords)..where((t) => t.id.equals(id))).write(
           AllergyRecordsCompanion(
-            reaction: Value(reaction),
-            severity: severity != null ? Value(severity.index) : const Value.absent(),
+            reaction: reaction != null ? Value(reaction) : const Value.absent(),
+            severity: severity != null ? Value(severity) : const Value.absent(),
             lastOccurrence: Value(lastOccurrence),
             treatment: Value(treatment),
             note: Value(note),
