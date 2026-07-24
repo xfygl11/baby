@@ -1,42 +1,75 @@
 name: xiaoyuanbao
-description: 小元宝 - 宝宝成长记录APP
+description: 小元宝成长记 - 陪伴宝宝0-18岁成长的智能记录APP
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
-  flutter: '>=3.22.0'
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: ">=3.22.0"
 
 dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
+  
   drift: ^2.22.0
   sqlite3_flutter_libs: ^0.5.24
   path_provider: ^2.1.4
   path: ^1.9.0
+  
   flutter_riverpod: ^3.0.0-alpha.3
+  riverpod_annotation: ^3.0.0-alpha.3
+  
   intl: ^0.19.0
   uuid: ^4.5.0
+  
   shared_preferences: ^2.3.2
   flutter_secure_storage: ^9.2.2
+  
   dynamic_color: ^1.7.0
+  
   fl_chart: ^0.69.0
+  
   image_picker: ^1.1.2
+  
   flutter_local_notifications: ^17.2.2
   timezone: ^0.9.4
+  
   share_plus: ^10.0.2
   file_picker: ^8.1.2
+  
   permission_handler: ^11.3.1
+  
+  speech_to_text: ^6.6.2
+  flutter_sound: ^9.20.3
+  
+  collection: ^1.18.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^4.0.0
   drift_dev: ^2.22.0
-  build_runner: ^2.4.12
+  build_runner: ^2.4.11
+  riverpod_generator: ^3.0.0-alpha.3
 
 flutter:
   uses-material-design: true
+  
   assets:
     - assets/images/
+    - assets/data/who_growth/
+  
+  fonts:
+    - family: NotoSansSC
+      fonts:
+        - asset: assets/fonts/NotoSansSC-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSansSC-Bold.ttf
+          weight: 700
+    - family: NotoSerifSC
+      fonts:
+        - asset: assets/fonts/NotoSerifSC-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/NotoSerifSC-Bold.ttf
+          weight: 700
