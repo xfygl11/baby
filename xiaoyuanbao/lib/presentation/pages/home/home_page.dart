@@ -476,7 +476,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                       : vaccine.vaccineName
                   : '暂无',
               secondary: vaccine != null && vaccine.scheduledDate != null
-                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  ? _formatDaysUntil(vaccine.scheduledDate!)
                   : '--',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
@@ -519,7 +519,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                       : vaccine.vaccineName
                   : '暂无',
               secondary: vaccine != null && vaccine.scheduledDate != null
-                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  ? _formatDaysUntil(vaccine.scheduledDate!)
                   : '--',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
@@ -562,7 +562,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
                       : vaccine.vaccineName
                   : '暂无',
               secondary: vaccine != null && vaccine.scheduledDate != null
-                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  ? _formatDaysUntil(vaccine.scheduledDate!)
                   : '--',
               onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GrowthPage())),
             ),
@@ -656,6 +656,23 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
       return emotions[emotionType];
     }
     return '未知';
+  }
+
+  String _formatDaysUntil(DateTime scheduledDate) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final scheduled = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+    final days = scheduled.difference(today).inDays;
+    
+    if (days < 0) {
+      return '已过期';
+    } else if (days == 0) {
+      return '今天';
+    } else if (days == 1) {
+      return '明天';
+    } else {
+      return '${days}天后';
+    }
   }
 
   Future<Map<String, dynamic>> _getFeedingStats(String babyId) async {

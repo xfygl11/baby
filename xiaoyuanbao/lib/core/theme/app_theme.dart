@@ -1,6 +1,42 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
 
+/// 动效时长设计令牌
+class MotionDurations {
+  /// 微交互（按钮点击、开关切换）
+  static const Duration micro = Duration(milliseconds: 150);
+  
+  /// 小型动画（卡片展开、列表项动画）
+  static const Duration small = Duration(milliseconds: 200);
+  
+  /// 中型动画（页面转场、弹窗显示）
+  static const Duration medium = Duration(milliseconds: 300);
+  
+  /// 大型动画（全屏转场、复杂动画序列）
+  static const Duration large = Duration(milliseconds: 400);
+  
+  /// 加载状态动画
+  static const Duration loading = Duration(milliseconds: 250);
+}
+
+/// 缓动曲线设计令牌
+class MotionCurves {
+  /// 标准缓动（大多数动画）
+  static const Curve standard = Curves.easeInOut;
+  
+  /// 进入动画（元素出现）
+  static const Curve enter = Curves.easeOut;
+  
+  /// 退出动画（元素消失）
+  static const Curve exit = Curves.easeIn;
+  
+  /// 弹性动画（按钮点击反馈）
+  static const Curve bounce = Curves.elasticOut;
+  
+  /// 线性动画（进度条）
+  static const Curve linear = Curves.linear;
+}
+
 class AppTheme extends ThemeExtension<AppTheme> {
   final Color stageBg;
   final Color stageSurface;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/date_time_utils.dart';
+import '../../../core/data/who_growth_standards.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../data/drift/tables/teeth_records.dart';
 import '../../../data/drift/daos/growth_repository.dart';
@@ -831,19 +832,24 @@ class GrowthChartPainter extends CustomPainter {
   }
 
   Map<String, double> _getStandardValues(int ageMonths) {
-    final standards = {
-      GrowthMetric.weight: {'p3': 6.0, 'p50': 7.5, 'p97': 9.5},
-      GrowthMetric.height: {'p3': 61.4, 'p50': 65.7, 'p97': 70.0},
-      GrowthMetric.headCircumference: {'p3': 39.9, 'p50': 42.4, 'p97': 44.9},
-      GrowthMetric.bmi: {'p3': 14.0, 'p50': 16.5, 'p97': 19.0},
-    };
-    final base = standards[metric]!;
-    final factor = (ageMonths - 6) / 6;
-    return {
-      'p3': base['p3']! + factor * 1.5,
-      'p50': base['p50']! + factor * 2.0,
-      'p97': base['p97']! + factor * 2.5,
-    };
+    // 使用 WHO 标准数据（假设女宝宝，实际应从 baby 数据获取）
+    switch (metric) {
+      case GrowthMetric.weight:
+        return WhoGrowthStandards.getWeightStandard(ageMonths, isMale: false);
+      case GrowthMetric.height:
+        return WhoGrowthStandards.getHeightStandard(ageMonths, isMale: false);
+      case GrowthMetric.headCircumference:
+        return WhoGrowthStandards.getHeadCircumferenceStandard(ageMonths, isMale: false);
+      case GrowthMetric.bmi:
+        // BMI 使用默认值
+        final weightStd = WhoGrowthStandards.getWeightStandard(ageMonths, isMale: false);
+        final heightStd = WhoGrowthStandards.getHeightStandard(ageMonths, isMale: false);
+        return {
+          'p3': weightStd['p3']! / ((heightStd['p3']! / 100) * (heightStd['p3']! / 100)),
+          'p50': weightStd['p50']! / ((heightStd['p50']! / 100) * (heightStd['p50']! / 100)),
+          'p97': weightStd['p97']! / ((heightStd['p97']! / 100) * (heightStd['p97']! / 100)),
+        };
+    }
   }
 
   @override

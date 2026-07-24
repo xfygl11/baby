@@ -45,6 +45,17 @@ class ThemeBuilder {
   }
 
   static AppTheme _buildAppTheme(StageColors stage, bool isDark) {
+    // 深色模式下使用更高对比度的文本颜色，确保符合 WCAG AA 标准
+    final Color textPrimaryColor = isDark 
+        ? const Color(0xFFFAFAF9)  // 更亮的白色，提高对比度
+        : AppColors.ink900;
+    final Color textSecondaryColor = isDark 
+        ? const Color(0xFFD6D3D1)  // 中等亮度的灰色
+        : AppColors.ink600;
+    final Color textTertiaryColor = isDark 
+        ? const Color(0xFFA8A29E)  // 较暗的灰色，但仍保持足够对比度
+        : AppColors.ink300;
+    
     return AppTheme(
       stageBg: stage.bg,
       stageSurface: stage.surface,
@@ -56,10 +67,10 @@ class ThemeBuilder {
       warning: AppColors.warning,
       danger: AppColors.danger,
       info: AppColors.info,
-      textPrimary: isDark ? const Color(0xFFF5EFE6) : AppColors.ink900,
-      textSecondary: isDark ? AppColors.ink300 : AppColors.ink600,
-      textTertiary: isDark ? const Color(0xFF6B5F55) : AppColors.ink300,
-      onAccent: isDark ? AppColors.ink900 : AppColors.paper,
+      textPrimary: textPrimaryColor,
+      textSecondary: textSecondaryColor,
+      textTertiary: textTertiaryColor,
+      onAccent: isDark ? const Color(0xFF1A1A1A) : AppColors.paper,
       paper: isDark ? const Color(0xFF1A1612) : AppColors.paper,
       radiusSm: _radiusSm,
       radiusMd: _radiusMd,
