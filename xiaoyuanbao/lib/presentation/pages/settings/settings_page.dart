@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
+import '../providers/app_providers.dart';
 
 enum ThemeModeOption { system, light, dark }
 enum ThemeColorOption { age, system, custom }
 enum FontSizeOption { standard, large, extraLarge }
 enum AiAutonomyLevel { suggestion, assist, efficient, auto }
 
-class SettingsPage extends StatefulWidget {
+class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  State<SettingsPage> createState() => _SettingsPageState();
+  ConsumerState<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends ConsumerState<SettingsPage> {
   ThemeModeOption _themeMode = ThemeModeOption.system;
   ThemeColorOption _themeColor = ThemeColorOption.age;
   FontSizeOption _fontSize = FontSizeOption.standard;
@@ -237,7 +239,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.download_outlined,
                 title: '导出数据',
                 subtitle: '导出为 JSON 格式',
-                onTap: () {},
+                onTap: () => _exportData(),
               ),
               _buildDivider(theme),
               _buildNavigationTile(
@@ -245,7 +247,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.upload_outlined,
                 title: '导入数据',
                 subtitle: '从备份文件恢复',
-                onTap: () {},
+                onTap: () => _showImportDialog(),
               ),
               _buildDivider(theme),
               _buildNavigationTile(
@@ -253,7 +255,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.save_outlined,
                 title: '备份到本地',
                 subtitle: '保存到设备存储',
-                onTap: () {},
+                onTap: () => _backupToLocal(),
               ),
             ],
           ),
@@ -618,6 +620,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
                 onTap: () {
                   setState(() => _themeMode = option);
+                  final themeMode = switch (option) {
+                    ThemeModeOption.system => ThemeMode.system,
+                    ThemeModeOption.light => ThemeMode.light,
+                    ThemeModeOption.dark => ThemeMode.dark,
+                  };
+                  ref.read(themeModeProvider.notifier).state = themeMode;
                   Navigator.of(context).pop();
                 },
               );
@@ -798,8 +806,109 @@ class _SettingsPageState extends State<SettingsPage> {
               style: FilledButton.styleFrom(
                 backgroundColor: AppTheme.of(context).danger,
               ),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final aiService = ref.read(aiServiceProvider);
+                await aiService.clearChatHistory();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('对话历史已清除')),
+                  );
+                }
+              },
               child: const Text('清除'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _exportData() async {
+    final babyAsync = await ref.read(currentBabyProvider.future);
+    if (babyAsync == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有宝宝档案')),
+      );
+      return;
+    }
+
+    try {
+      final backupService = ref.read(backupServiceProvider);
+      final jsonStr = await backupService.exportToJson(babyAsync.id);
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('导出成功'),
+            content: SelectableText(
+              '数据已导出，共 ${jsonStr.length} 字符。\n\n可复制以下内容保存：',
+              style: const TextStyle(fontSize: 14),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('关闭'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('导出失败: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _backupToLocal() async {
+    final babyAsync = await ref.read(currentBabyProvider.future);
+    if (babyAsync == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('没有宝宝档案')),
+      );
+      return;
+    }
+
+    try {
+      final backupService = ref.read(backupServiceProvider);
+      final filePath = await backupService.saveBackupToFile(babyAsync.id);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份已保存到: $filePath')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('备份失败: $e')),
+        );
+      }
+    }
+  }
+
+  void _showImportDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('导入数据'),
+          content: const Text('请将备份的 JSON 内容粘贴到此处。导入将创建新的宝宝档案。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('导入功能将在后续版本支持')),
+                );
+              },
+              child: const Text('确定'),
             ),
           ],
         );
