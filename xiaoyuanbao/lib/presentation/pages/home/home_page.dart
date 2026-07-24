@@ -150,6 +150,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
 
   Widget _buildHomeContent(AppTheme theme, Baby baby) {
     final age = DateTimeUtils.calculateAge(baby.birthDate, now: _now);
+    final stage = _getGrowthStage(age);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -159,17 +160,25 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
           children: [
             _buildHeader(theme, baby, age),
             SizedBox(height: theme.spacingXl),
-            _buildTodayOverview(theme, baby.id),
+            _buildAgeAdaptiveOverview(theme, baby.id, stage),
             SizedBox(height: theme.spacingXl),
             _buildRecentRecords(theme, baby.id),
             SizedBox(height: theme.spacingXl),
-            _buildQuickActions(theme),
+            _buildAgeAdaptiveQuickActions(theme, stage),
             SizedBox(height: theme.spacingXl),
             _buildSmartRecommendation(theme),
           ],
         ),
       ),
     );
+  }
+
+  GrowthStage _getGrowthStage(AgeResult age) {
+    if (age.years < 1) return GrowthStage.infant;
+    if (age.years < 3) return GrowthStage.toddler;
+    if (age.years < 6) return GrowthStage.preschool;
+    if (age.years < 12) return GrowthStage.school;
+    return GrowthStage.teen;
   }
 
   Widget _buildHeader(AppTheme theme, Baby baby, AgeResult age) {
@@ -245,7 +254,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
     );
   }
 
-  Widget _buildTodayOverview(AppTheme theme, String babyId) {
+  Widget _buildAgeAdaptiveOverview(AppTheme theme, String babyId, GrowthStage stage) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,65 +264,295 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
         ),
         SizedBox(height: theme.spacingMd),
         FutureBuilder<Map<String, dynamic>>(
-          future: _getFeedingStats(babyId),
-          builder: (context, feedingSnapshot) {
-            return FutureBuilder<Map<String, dynamic>>(
-              future: _getSleepStats(babyId),
-              builder: (context, sleepSnapshot) {
-                return FutureBuilder<VaccineRecord?>(
-                  future: _getNextVaccine(babyId),
-                  builder: (context, vaccineSnapshot) {
-                    final feedingData = feedingSnapshot.data ?? {'count': 0, 'totalAmount': 0.0};
-                    final sleepData = sleepSnapshot.data ?? {'count': 0, 'totalDurationMinutes': 0};
-                    final nextVaccine = vaccineSnapshot.data;
+          future: _getStageOverviewData(babyId, stage),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Row(
+                children: [
+                  for (int i = 0; i < 3; i++)
+                    Expanded(
+                      child: Container(
+                        height: 100,
+                        margin: i < 2 ? EdgeInsets.only(right: theme.spacingMd) : null,
+                        decoration: BoxDecoration(
+                          color: theme.stageSurface,
+                          borderRadius: BorderRadius.circular(theme.radiusMd),
+                          border: Border.all(color: theme.textTertiary.withOpacity(0.15)),
+                        ),
+                        child: Center(child: CircularProgressIndicator(color: theme.stageAccent, strokeWidth: 2)),
+                      ),
+                    ),
+                ],
+              );
+            }
 
-                    return Row(
-                      children: [
-                        Expanded(
-                          child: _OverviewCard(
-                            icon: '🍼',
-                            title: '今日喂养',
-                            primary: '${feedingData['count']}次',
-                            secondary: '${(feedingData['totalAmount'] as double).toStringAsFixed(0)}ml',
-                            onTap: () {},
-                          ),
-                        ),
-                        SizedBox(width: theme.spacingMd),
-                        Expanded(
-                          child: _OverviewCard(
-                            icon: '😴',
-                            title: '今日睡眠',
-                            primary: '${sleepData['count']}次',
-                            secondary: _formatDuration(sleepData['totalDurationMinutes'] as int),
-                            onTap: () {},
-                          ),
-                        ),
-                        SizedBox(width: theme.spacingMd),
-                        Expanded(
-                          child: _OverviewCard(
-                            icon: '💉',
-                            title: '下次疫苗',
-                            primary: nextVaccine != null
-                                ? nextVaccine.vaccineName.length > 6
-                                    ? '${nextVaccine.vaccineName.substring(0, 6)}...'
-                                    : nextVaccine.vaccineName
-                                : '暂无',
-                            secondary: nextVaccine != null && nextVaccine.scheduledDate != null
-                                ? '${nextVaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
-                                : '--',
-                            onTap: () {},
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
+            final data = snapshot.data ?? {};
+            final cards = _getStageOverviewCards(stage, data);
+
+            return Row(
+              children: cards,
             );
           },
         ),
       ],
     );
+  }
+
+  Future<Map<String, dynamic>> _getStageOverviewData(String babyId, GrowthStage stage) async {
+    final data = <String, dynamic>{};
+
+    switch (stage) {
+      case GrowthStage.infant:
+        data['feeding'] = await ref.read(feedingRepositoryProvider).getDailyStats(babyId, DateTime.now());
+        data['sleep'] = await ref.read(sleepRepositoryProvider).getDailyStats(babyId, DateTime.now());
+        data['nextVaccine'] = await ref.read(vaccineRepositoryProvider).getNextVaccine(babyId);
+        break;
+      case GrowthStage.toddler:
+        data['sleep'] = await ref.read(sleepRepositoryProvider).getDailyStats(babyId, DateTime.now());
+        data['diaper'] = await ref.read(diaperRepositoryProvider).getDailyStats(babyId, DateTime.now());
+        data['nextVaccine'] = await ref.read(vaccineRepositoryProvider).getNextVaccine(babyId);
+        break;
+      case GrowthStage.preschool:
+        data['milestone'] = await ref.read(milestoneRepositoryProvider).getMilestonesByBabyId(babyId);
+        data['growth'] = await ref.read(growthRepositoryProvider).getLatestGrowth(babyId);
+        data['nextVaccine'] = await ref.read(vaccineRepositoryProvider).getNextVaccine(babyId);
+        break;
+      case GrowthStage.school:
+        data['exam'] = await ref.read(examRepositoryProvider).getLatestExam(babyId);
+        data['award'] = await ref.read(awardRepositoryProvider).getLatestAward(babyId);
+        data['school'] = await ref.read(schoolRepositoryProvider).getCurrentSchool(babyId);
+        break;
+      case GrowthStage.teen:
+        data['exam'] = await ref.read(examRepositoryProvider).getLatestExam(babyId);
+        data['award'] = await ref.read(awardRepositoryProvider).getLatestAward(babyId);
+        data['emotion'] = await ref.read(emotionRepositoryProvider).getLatestEmotion(babyId);
+        break;
+    }
+
+    return data;
+  }
+
+  List<Widget> _getStageOverviewCards(GrowthStage stage, Map<String, dynamic> data) {
+    final theme = AppTheme.of(context);
+    final cards = <Widget>[];
+
+    switch (stage) {
+      case GrowthStage.infant:
+        final feeding = data['feeding'] as Map<String, dynamic>? ?? {'count': 0, 'totalAmount': 0.0};
+        final sleep = data['sleep'] as Map<String, dynamic>? ?? {'count': 0, 'totalDurationMinutes': 0};
+        final vaccine = data['nextVaccine'] as VaccineRecord?;
+
+        cards.addAll([
+          Expanded(
+            child: _OverviewCard(
+              icon: '🍼',
+              title: '今日喂养',
+              primary: '${feeding['count']}次',
+              secondary: '${(feeding['totalAmount'] as double).toStringAsFixed(0)}ml',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '😴',
+              title: '今日睡眠',
+              primary: '${sleep['count']}次',
+              secondary: _formatDuration(sleep['totalDurationMinutes'] as int),
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '💉',
+              title: '下次疫苗',
+              primary: vaccine != null
+                  ? vaccine.vaccineName.length > 6
+                      ? '${vaccine.vaccineName.substring(0, 6)}...'
+                      : vaccine.vaccineName
+                  : '暂无',
+              secondary: vaccine != null && vaccine.scheduledDate != null
+                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  : '--',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.toddler:
+        final sleep = data['sleep'] as Map<String, dynamic>? ?? {'count': 0, 'totalDurationMinutes': 0};
+        final diaper = data['diaper'] as Map<String, dynamic>? ?? {'wetCount': 0, 'dirtyCount': 0};
+        final vaccine = data['nextVaccine'] as VaccineRecord?;
+
+        cards.addAll([
+          Expanded(
+            child: _OverviewCard(
+              icon: '😴',
+              title: '今日睡眠',
+              primary: '${sleep['count']}次',
+              secondary: _formatDuration(sleep['totalDurationMinutes'] as int),
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '👶',
+              title: '今日尿布',
+              primary: '${(diaper['wetCount'] as int?) ?? 0}湿',
+              secondary: '${(diaper['dirtyCount'] as int?) ?? 0}便',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '💉',
+              title: '下次疫苗',
+              primary: vaccine != null
+                  ? vaccine.vaccineName.length > 6
+                      ? '${vaccine.vaccineName.substring(0, 6)}...'
+                      : vaccine.vaccineName
+                  : '暂无',
+              secondary: vaccine != null && vaccine.scheduledDate != null
+                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  : '--',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.preschool:
+        final milestones = data['milestone'] as List<MilestoneRecord>? ?? [];
+        final growth = data['growth'] as GrowthRecord?;
+        final vaccine = data['nextVaccine'] as VaccineRecord?;
+
+        cards.addAll([
+          Expanded(
+            child: _OverviewCard(
+              icon: '🏆',
+              title: '已达里程碑',
+              primary: '${milestones.length}个',
+              secondary: milestones.isNotEmpty ? milestones.last.name : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '📏',
+              title: '最新成长',
+              primary: growth?.weight != null ? '${growth!.weight}kg' : '--',
+              secondary: growth?.height != null ? '${growth!.height}cm' : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '💉',
+              title: '下次疫苗',
+              primary: vaccine != null
+                  ? vaccine.vaccineName.length > 6
+                      ? '${vaccine.vaccineName.substring(0, 6)}...'
+                      : vaccine.vaccineName
+                  : '暂无',
+              secondary: vaccine != null && vaccine.scheduledDate != null
+                  ? '${vaccine.scheduledDate!.difference(DateTime.now()).inDays + 1}天后'
+                  : '--',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.school:
+        final exam = data['exam'] as ExamRecord?;
+        final award = data['award'] as AwardRecord?;
+        final school = data['school'] as SchoolRecord?;
+
+        cards.addAll([
+          Expanded(
+            child: _OverviewCard(
+              icon: '📚',
+              title: '最近考试',
+              primary: exam != null ? '${exam.score}分' : '--',
+              secondary: exam != null ? '${exam.examName}' : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '🏅',
+              title: '最近获奖',
+              primary: award != null ? award.awardName : '--',
+              secondary: award != null ? '${award.awardingOrganization}' : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '🎒',
+              title: '所在学校',
+              primary: school != null ? school.schoolName : '--',
+              secondary: school != null ? '${school.grade}年级' : '--',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.teen:
+        final exam = data['exam'] as ExamRecord?;
+        final award = data['award'] as AwardRecord?;
+        final emotion = data['emotion'] as EmotionRecord?;
+
+        cards.addAll([
+          Expanded(
+            child: _OverviewCard(
+              icon: '📚',
+              title: '最近考试',
+              primary: exam != null ? '${exam.score}分' : '--',
+              secondary: exam != null ? '${exam.examName}' : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '🏅',
+              title: '最近获奖',
+              primary: award != null ? award.awardName : '--',
+              secondary: award != null ? '${award.awardingOrganization}' : '--',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _OverviewCard(
+              icon: '😊',
+              title: '最近情绪',
+              primary: emotion != null ? _getEmotionLabel(emotion.emotionType) : '--',
+              secondary: emotion != null ? '${emotion.triggerEvent ?? ''}' : '--',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+    }
+
+    return cards;
+  }
+
+  String _getEmotionLabel(int emotionType) {
+    final emotions = [
+      '开心', '难过', '生气', '焦虑', '兴奋', '平静', '嫉妒', '自豪', '害羞', '疲惫'
+    ];
+    if (emotionType >= 0 && emotionType < emotions.length) {
+      return emotions[emotionType];
+    }
+    return '未知';
   }
 
   Future<Map<String, dynamic>> _getFeedingStats(String babyId) async {
@@ -418,7 +657,7 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
     return await timelineService.getTimeline(babyId, limit: 3);
   }
 
-  Widget _buildQuickActions(AppTheme theme) {
+  Widget _buildAgeAdaptiveQuickActions(AppTheme theme, GrowthStage stage) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -428,39 +667,180 @@ class _HomePageState extends ConsumerState<HomePage> with WidgetsBindingObserver
         ),
         SizedBox(height: theme.spacingMd),
         Row(
-          children: [
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.mic,
-                label: '说话记录',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const AiAssistantPage()),
-                  );
-                },
-                isPrimary: true,
-              ),
-            ),
-            SizedBox(width: theme.spacingMd),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.camera_alt,
-                label: '拍照记录',
-                onTap: () {},
-              ),
-            ),
-            SizedBox(width: theme.spacingMd),
-            Expanded(
-              child: _QuickActionButton(
-                icon: Icons.edit_note,
-                label: '写日记',
-                onTap: () {},
-              ),
-            ),
-          ],
+          children: _getStageQuickActions(stage),
         ),
       ],
     );
+  }
+
+  List<Widget> _getStageQuickActions(GrowthStage stage) {
+    final theme = AppTheme.of(context);
+    final actions = <Widget>[];
+
+    switch (stage) {
+      case GrowthStage.infant:
+        actions.addAll([
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.mic,
+              label: '说话记录',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                );
+              },
+              isPrimary: true,
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.baby_changing_station,
+              label: '换尿布',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.snooze,
+              label: '睡了',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.toddler:
+        actions.addAll([
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.mic,
+              label: '说话记录',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                );
+              },
+              isPrimary: true,
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.baby_changing_station,
+              label: '便便',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.camera_alt,
+              label: '拍照',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.preschool:
+        actions.addAll([
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.mic,
+              label: '说话记录',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                );
+              },
+              isPrimary: true,
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.star,
+              label: '里程碑',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.edit_note,
+              label: '写日记',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.school:
+        actions.addAll([
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.mic,
+              label: '说话记录',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                );
+              },
+              isPrimary: true,
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.school,
+              label: '考试',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.trophy,
+              label: '获奖',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+      case GrowthStage.teen:
+        actions.addAll([
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.mic,
+              label: '说话记录',
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AiAssistantPage()),
+                );
+              },
+              isPrimary: true,
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.psychology,
+              label: '情绪',
+              onTap: () {},
+            ),
+          ),
+          SizedBox(width: theme.spacingMd),
+          Expanded(
+            child: _QuickActionButton(
+              icon: Icons.edit_note,
+              label: '日记',
+              onTap: () {},
+            ),
+          ),
+        ]);
+        break;
+    }
+
+    return actions;
   }
 
   Widget _buildSmartRecommendation(AppTheme theme) {

@@ -16,6 +16,22 @@ import 'tables/milestone_records.dart';
 import 'tables/diary_records.dart';
 import 'tables/app_settings.dart';
 import 'tables/ai_chat_messages.dart';
+import 'tables/stool_records.dart';
+import 'tables/skin_records.dart';
+import 'tables/allergy_records.dart';
+import 'tables/doctor_visit_records.dart';
+import 'tables/teeth_records.dart';
+import 'tables/vision_records.dart';
+import 'tables/school_records.dart';
+import 'tables/exam_records.dart';
+import 'tables/award_records.dart';
+import 'tables/interest_class_records.dart';
+import 'tables/parent_meeting_records.dart';
+import 'tables/personality_records.dart';
+import 'tables/emotion_records.dart';
+import 'tables/hobby_records.dart';
+import 'tables/photo_records.dart';
+import 'tables/audio_records.dart';
 
 part 'app_database.g.dart';
 
@@ -33,6 +49,22 @@ part 'app_database.g.dart';
     DiaryRecords,
     AppSettings,
     AiChatMessages,
+    StoolRecords,
+    SkinRecords,
+    AllergyRecords,
+    DoctorVisitRecords,
+    TeethRecords,
+    VisionRecords,
+    SchoolRecords,
+    ExamRecords,
+    AwardRecords,
+    InterestClassRecords,
+    ParentMeetingRecords,
+    PersonalityRecords,
+    EmotionRecords,
+    HobbyRecords,
+    PhotoRecords,
+    AudioRecords,
   ],
 )
 class AppDatabase extends _$AppDatabase {

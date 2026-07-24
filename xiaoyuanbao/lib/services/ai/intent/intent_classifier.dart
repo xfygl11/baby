@@ -74,6 +74,51 @@ class IntentClassifier {
     ],
     AiIntent.recordStool: [
       '便便', '大便', '拉了', '拉屎', '臭臭', '排便',
+      '绿色便便', '黑色便便', '拉肚子', '便秘',
+    ],
+    AiIntent.recordSkin: [
+      '湿疹', '疹子', '痱子', '皮肤', '过敏', '起疹子',
+      '脸上长', '身上长', '红点', '痘痘',
+    ],
+    AiIntent.recordAllergy: [
+      '过敏', '过敏了', '起疹子', '过敏反应', '不能吃',
+      '过敏原', '过敏体质',
+    ],
+    AiIntent.recordDoctorVisit: [
+      '看病', '去医院', '看医生', '就诊', '体检',
+      '挂号', '复诊', '检查',
+    ],
+    AiIntent.recordTeeth: [
+      '长牙', '牙齿', '牙', '换牙', '掉牙', '乳牙',
+      '长了一颗牙', '第一颗牙',
+    ],
+    AiIntent.recordVision: [
+      '视力', '眼睛', '近视', '远视', '弱视',
+      '测视力', '视力检查',
+    ],
+    AiIntent.recordSchool: [
+      '上学', '学校', '班级', '老师', '入学',
+      '一年级', '幼儿园', '班主任',
+    ],
+    AiIntent.recordExam: [
+      '考试', '成绩', '分数', '分', '语文', '数学',
+      '期中', '期末', '测验',
+    ],
+    AiIntent.recordAward: [
+      '获奖', '奖', '一等奖', '二等奖', '荣誉',
+      '奖状', '比赛', '冠军',
+    ],
+    AiIntent.recordInterestClass: [
+      '兴趣班', '钢琴', '舞蹈', '画画', '围棋',
+      '编程', '考级', '上课',
+    ],
+    AiIntent.recordPersonality: [
+      '性格', '外向', '内向', '胆大', '谨慎',
+      '敏感', '坚韧', '观察',
+    ],
+    AiIntent.recordEmotion: [
+      '开心', '难过', '生气', '愤怒', '焦虑',
+      '情绪', '发脾气', '哭了',
     ],
     AiIntent.recordQuote: [
       '语录', '记一句话', '宝宝说', '说的话',
@@ -145,6 +190,8 @@ class IntentClassifier {
   static final List<AiIntent> _priorityOrder = [
     AiIntent.recordTemperature,
     AiIntent.recordMedication,
+    AiIntent.recordAllergy,
+    AiIntent.recordDoctorVisit,
     AiIntent.recordVaccine,
     AiIntent.recordGrowth,
     AiIntent.recordBreastfeeding,
@@ -154,7 +201,16 @@ class IntentClassifier {
     AiIntent.recordSleepEnd,
     AiIntent.recordDiaper,
     AiIntent.recordStool,
+    AiIntent.recordSkin,
+    AiIntent.recordTeeth,
+    AiIntent.recordVision,
     AiIntent.recordMilestone,
+    AiIntent.recordSchool,
+    AiIntent.recordExam,
+    AiIntent.recordAward,
+    AiIntent.recordInterestClass,
+    AiIntent.recordPersonality,
+    AiIntent.recordEmotion,
     AiIntent.recordActivity,
     AiIntent.recordExpense,
     AiIntent.recordQuote,

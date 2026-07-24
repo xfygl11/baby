@@ -14,7 +14,25 @@ import '../../data/drift/daos/settings_repository.dart';
 import '../../data/drift/daos/ai_chat_repository.dart';
 import '../../data/drift/daos/temperature_repository.dart';
 import '../../data/drift/daos/medication_repository.dart';
+import '../../data/drift/daos/stool_repository.dart';
+import '../../data/drift/daos/skin_repository.dart';
+import '../../data/drift/daos/allergy_repository.dart';
+import '../../data/drift/daos/doctor_visit_repository.dart';
+import '../../data/drift/daos/teeth_repository.dart';
+import '../../data/drift/daos/vision_repository.dart';
+import '../../data/drift/daos/school_repository.dart';
+import '../../data/drift/daos/exam_repository.dart';
+import '../../data/drift/daos/award_repository.dart';
+import '../../data/drift/daos/interest_class_repository.dart';
+import '../../data/drift/daos/parent_meeting_repository.dart';
+import '../../data/drift/daos/personality_repository.dart';
+import '../../data/drift/daos/emotion_repository.dart';
+import '../../data/drift/daos/hobby_repository.dart';
+import '../../data/drift/daos/photo_repository.dart';
+import '../../data/drift/daos/audio_repository.dart';
 import '../../services/ai/ai_service.dart';
+import '../../services/media/photo_service.dart';
+import '../../services/media/audio_service.dart';
 import '../../services/vaccine/vaccine_service.dart';
 import '../../services/growth/growth_service.dart';
 import '../../services/milestone/milestone_service.dart';
@@ -87,6 +105,96 @@ final temperatureRepositoryProvider = Provider<TemperatureRepository>((ref) {
 final medicationRepositoryProvider = Provider<MedicationRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return MedicationRepository(db);
+});
+
+final stoolRepositoryProvider = Provider<StoolRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return StoolRepository(db);
+});
+
+final skinRepositoryProvider = Provider<SkinRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return SkinRepository(db);
+});
+
+final allergyRepositoryProvider = Provider<AllergyRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return AllergyRepository(db);
+});
+
+final doctorVisitRepositoryProvider = Provider<DoctorVisitRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return DoctorVisitRepository(db);
+});
+
+final teethRepositoryProvider = Provider<TeethRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return TeethRepository(db);
+});
+
+final visionRepositoryProvider = Provider<VisionRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return VisionRepository(db);
+});
+
+final schoolRepositoryProvider = Provider<SchoolRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return SchoolRepository(db);
+});
+
+final examRepositoryProvider = Provider<ExamRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ExamRepository(db);
+});
+
+final awardRepositoryProvider = Provider<AwardRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return AwardRepository(db);
+});
+
+final interestClassRepositoryProvider = Provider<InterestClassRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return InterestClassRepository(db);
+});
+
+final parentMeetingRepositoryProvider = Provider<ParentMeetingRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return ParentMeetingRepository(db);
+});
+
+final personalityRepositoryProvider = Provider<PersonalityRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return PersonalityRepository(db);
+});
+
+final emotionRepositoryProvider = Provider<EmotionRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return EmotionRepository(db);
+});
+
+final hobbyRepositoryProvider = Provider<HobbyRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return HobbyRepository(db);
+});
+
+final photoRepositoryProvider = Provider<PhotoRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return PhotoRepository(db);
+});
+
+final audioRepositoryProvider = Provider<AudioRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return AudioRepository(db);
+});
+
+final photoServiceProvider = Provider<PhotoService>((ref) {
+  final repo = ref.watch(photoRepositoryProvider);
+  return PhotoService(repo);
+});
+
+final audioServiceProvider = Provider<AudioService>((ref) {
+  final repo = ref.watch(audioRepositoryProvider);
+  return AudioService(repo);
 });
 
 final currentBabyProvider = FutureProvider<Baby?>((ref) async {
