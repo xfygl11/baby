@@ -4,6 +4,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/app_enums.dart';
 import '../../../data/drift/app_database.dart';
 import '../../../services/ai/ai_service.dart';
+import '../../../services/speech/speech_service.dart';
 import '../../providers/app_providers.dart';
 
 class ChatMessageItem {
@@ -41,6 +42,8 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   final FocusNode _focusNode = FocusNode();
   final List<ChatMessageItem> _messages = [];
   bool _isFirstTime = true;
+  bool _isListening = false;
+  bool _speechInitialized = false;
 
   final List<String> _quickActions = [
     '📊 今日总结',
@@ -63,6 +66,7 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     _textController.addListener(_onTextChanged);
     _focusNode.addListener(_onFocusChanged);
     _loadChatHistory();
+    _initSpeech();
   }
 
   @override
@@ -73,6 +77,12 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
     _focusNode.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _initSpeech() async {
+    final speechService = ref.read(speechServiceProvider);
+    _speechInitialized = await speechService.initialize();
+    setState(() {});
   }
 
   void _onTextChanged() {
@@ -623,6 +633,8 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
   }
 
   Widget _buildInputArea(AppTheme theme, bool isProcessing) {
+    final speechService = ref.watch(speechServiceProvider);
+
     return Container(
       padding: EdgeInsets.fromLTRB(
         theme.spacingMd,
@@ -636,101 +648,189 @@ class _AiAssistantPageState extends ConsumerState<AiAssistantPage> {
           top: BorderSide(color: theme.textTertiary.withOpacity(0.1)),
         ),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+      child: Column(
         children: [
-          InkWell(
-            onTap: isProcessing ? null : () {},
-            borderRadius: BorderRadius.circular(28),
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: theme.stageAccent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.mic,
-                color: theme.onAccent,
-                size: 24,
-              ),
-            ),
-          ),
-          SizedBox(width: theme.spacingSm),
-          Expanded(
-            child: TextField(
-              controller: _textController,
-              focusNode: _focusNode,
-              enabled: !isProcessing,
-              maxLines: null,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  _sendMessage(value);
-                }
-              },
-              decoration: InputDecoration(
-                hintText: '输入消息...',
-                hintStyle: TextStyle(color: theme.textTertiary),
-                filled: true,
-                fillColor: theme.paper,
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: theme.spacingMd,
-                  vertical: theme.spacingSm + 4,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(theme.radiusPill),
-                  borderSide: BorderSide.none,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(theme.radiusPill),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(theme.radiusPill),
-                  borderSide: BorderSide(color: theme.stageAccent, width: 1.5),
-                ),
-              ),
-            ),
-          ),
-          if (_textController.text.isNotEmpty || isProcessing) ...[
-            SizedBox(width: theme.spacingSm),
-            InkWell(
-              onTap: isProcessing
-                  ? null
-                  : () {
-                      if (_textController.text.trim().isNotEmpty) {
-                        _sendMessage(_textController.text);
-                      }
-                    },
-              borderRadius: BorderRadius.circular(24),
+          if (_isListening)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: theme.spacingSm),
               child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isProcessing ? theme.stageAccentLight : theme.stageAccent,
-                  shape: BoxShape.circle,
+                padding: EdgeInsets.symmetric(
+                  horizontal: theme.spacingMd,
+                  vertical: theme.spacingSm,
                 ),
-                child: isProcessing
-                    ? Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(theme.onAccent),
-                        ),
-                      )
-                    : Icon(
-                        Icons.send,
-                        color: theme.onAccent,
-                        size: 20,
+                decoration: BoxDecoration(
+                  color: theme.danger.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(theme.radiusMd),
+                  border: Border.all(color: theme.danger.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.mic, color: theme.danger, size: 18),
+                    SizedBox(width: theme.spacingSm),
+                    Expanded(
+                      child: Text(
+                        speechService.recognizedText.isNotEmpty
+                            ? speechService.recognizedText
+                            : '正在听...',
+                        style: TextStyle(color: theme.textPrimary),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                    SizedBox(width: theme.spacingSm),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              InkWell(
+                onTap: isProcessing ? null : _toggleSpeech,
+                borderRadius: BorderRadius.circular(28),
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _isListening ? theme.danger : theme.stageAccent,
+                    shape: BoxShape.circle,
+                    boxShadow: _isListening
+                        ? [
+                            BoxShadow(
+                              color: theme.danger.withOpacity(0.4),
+                              blurRadius: 8,
+                              spreadRadius: 2,
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    _isListening ? Icons.stop : Icons.mic,
+                    color: theme.onAccent,
+                    size: 24,
+                  ),
+                ),
+              ),
+              SizedBox(width: theme.spacingSm),
+              Expanded(
+                child: TextField(
+                  controller: _textController,
+                  focusNode: _focusNode,
+                  enabled: !isProcessing && !_isListening,
+                  maxLines: null,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      _sendMessage(value);
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: _isListening ? '正在听你说话...' : '输入消息...',
+                    hintStyle: TextStyle(color: theme.textTertiary),
+                    filled: true,
+                    fillColor: theme.paper,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: theme.spacingMd,
+                      vertical: theme.spacingSm + 4,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(theme.radiusPill),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(theme.radiusPill),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(theme.radiusPill),
+                      borderSide: BorderSide(color: theme.stageAccent, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              if (_textController.text.isNotEmpty || isProcessing) ...[
+                SizedBox(width: theme.spacingSm),
+                InkWell(
+                  onTap: isProcessing
+                      ? null
+                      : () {
+                          if (_textController.text.trim().isNotEmpty) {
+                            _sendMessage(_textController.text);
+                          }
+                        },
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isProcessing ? theme.stageAccentLight : theme.stageAccent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: isProcessing
+                        ? Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(theme.onAccent),
+                            ),
+                          )
+                        : Icon(
+                            Icons.send,
+                            color: theme.onAccent,
+                            size: 20,
+                          ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _toggleSpeech() async {
+    final speechService = ref.read(speechServiceProvider);
+
+    if (_isListening) {
+      await speechService.stopListening(
+        onResult: (text) {
+          if (text.isNotEmpty) {
+            _textController.text = text;
+            _sendMessage(text);
+          }
+        },
+      );
+      setState(() => _isListening = false);
+    } else {
+      if (!_speechInitialized) {
+        _speechInitialized = await speechService.initialize();
+        if (!_speechInitialized) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('语音识别初始化失败')),
+          );
+          return;
+        }
+      }
+
+      _textController.clear();
+      setState(() => _isListening = true);
+
+      await speechService.startListening(
+        onResult: (text) {
+          setState(() {});
+        },
+      );
+    }
   }
 
   void _showClearDialog() {

@@ -8,6 +8,7 @@ import '../../providers/app_providers.dart';
 import '../../widgets/empty_state_widget.dart';
 import '../../widgets/loading_widget.dart';
 import '../ai_assistant/ai_assistant_page.dart';
+import '../record/edit_record_page.dart';
 
 class TimelinePage extends ConsumerStatefulWidget {
   const TimelinePage({super.key});
@@ -257,10 +258,9 @@ class _TimelinePageState extends ConsumerState<TimelinePage> {
   }
 
   void _onItemTap(TimelineItem item) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('功能开发中'),
-        duration: const Duration(seconds: 2),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => EditRecordPage(recordId: item.id),
       ),
     );
   }

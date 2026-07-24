@@ -45,6 +45,7 @@ import '../../services/health/red_flag_service.dart';
 import '../../services/memory/on_this_day_service.dart';
 import '../../services/media/photo_service.dart';
 import '../../services/media/audio_service.dart';
+import '../../services/speech/speech_service.dart';
 import '../../services/vaccine/vaccine_service.dart';
 import '../../services/growth/growth_service.dart';
 import '../../services/milestone/milestone_service.dart';
@@ -254,6 +255,10 @@ final photoServiceProvider = Provider<PhotoService>((ref) {
 final audioServiceProvider = Provider<AudioService>((ref) {
   final repo = ref.watch(audioRepositoryProvider);
   return AudioService(repo);
+});
+
+final speechServiceProvider = ChangeNotifierProvider<SpeechService>((ref) {
+  return SpeechService();
 });
 
 final currentBabyProvider = FutureProvider<Baby?>((ref) async {
